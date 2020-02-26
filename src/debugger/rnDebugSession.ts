@@ -1,96 +1,76 @@
 // Copyright (c) Microsoft Corporation. All rights reserved.
 // Licensed under the MIT license. See LICENSE file in the project root for details.
 
-import * as path from "path";
 import * as vscode from "vscode";
+import * as Q from "q";
+import * as path from "path";
+import * as fs from "fs";
 import * as mkdirp from "mkdirp";
-import { logger } from "@vscode/debugadapter";
+import stripJsonComments = require("strip-json-comments");
+import { LoggingDebugSession, Logger, logger } from "vscode-debugadapter";
 import { DebugProtocol } from "vscode-debugprotocol";
-import * as nls from "vscode-nls";
-import { ProjectVersionHelper } from "../common/projectVersionHelper";
-import { TelemetryHelper } from "../common/telemetryHelper";
-import { RnCDPMessageHandler } from "../cdp-proxy/CDPMessageHandlers/rnCDPMessageHandler";
+import { getLoggingDirectory } from "../extension/log/LogHelper";
+import { ReactNativeProjectHelper } from "../common/reactNativeProjectHelper";
 import { ErrorHelper } from "../common/error/errorHelper";
 import { InternalErrorCode } from "../common/error/internalErrorCode";
-import { ReactNativeProjectHelper } from "../common/reactNativeProjectHelper";
+import { ILaunchArgs } from "../extension/launchArgs";
+import { ProjectVersionHelper } from "../common/projectVersionHelper";
+import { TelemetryHelper } from "../common/telemetryHelper";
+import { ProjectsStorage } from "../extension/projectsStorage";
+import { AppLauncher } from "../extension/appLauncher";
 import { MultipleLifetimesAppWorker } from "./appWorker";
-import {
-    DebugSessionBase,
-    DebugSessionStatus,
-    IAttachRequestArgs,
-    ILaunchRequestArgs,
-} from "./debugSessionBase";
-import { JsDebugConfigAdapter } from "./jsDebugConfigAdapter";
-import { RNSession } from "./debugSessionWrapper";
-
-nls.config({
-    messageFormat: nls.MessageFormat.bundle,
-    bundleFormat: nls.BundleFormat.standalone,
-})();
+import * as nls from "vscode-nls";
 const localize = nls.loadMessageBundle();
 
-export class RNDebugSession extends DebugSessionBase {
-    private appWorker: MultipleLifetimesAppWorker | null;
-    private onDidStartDebugSessionHandler: vscode.Disposable;
-    private onDidTerminateDebugSessionHandler: vscode.Disposable;
+export interface IAttachRequestArgs extends DebugProtocol.AttachRequestArguments, ILaunchArgs {
+    cwd: string; /* Automatically set by VS Code to the currently opened folder */
+    port: number;
+    url?: string;
+    address?: string;
+}
 
-    constructor(rnSession: RNSession) {
-        super(rnSession);
+export interface ILaunchRequestArgs extends DebugProtocol.LaunchRequestArguments, IAttachRequestArgs { }
 
-        // variables definition
-        this.appWorker = null;
+export class RNDebugSession extends LoggingDebugSession {
 
-        this.onDidStartDebugSessionHandler = vscode.debug.onDidStartDebugSession(
-            this.handleStartDebugSession.bind(this),
-        );
+    private appLauncher: AppLauncher;
+    private appWorker: MultipleLifetimesAppWorker | null = null;
+    private projectRootPath: string;
+    private isSettingsInitialized: boolean; // used to prevent parameters reinitialization when attach is called from launch function
+    private previousAttachArgs: IAttachRequestArgs;
 
-        this.onDidTerminateDebugSessionHandler = vscode.debug.onDidTerminateDebugSession(
-            this.handleTerminateDebugSession.bind(this),
-        );
+    constructor(private session: vscode.DebugSession) {
+        super();
     }
 
-    protected async launchRequest(
-        response: DebugProtocol.LaunchResponse,
-        launchArgs: ILaunchRequestArgs,
-        // eslint-disable-next-line @typescript-eslint/no-unused-vars
-        request?: DebugProtocol.Request,
-    ): Promise<void> {
-        try {
-            try {
-                if (launchArgs.platform != "exponent") {
-                    await ReactNativeProjectHelper.verifyMetroConfigFile(launchArgs.cwd);
-                }
-                await this.initializeSettings(launchArgs);
+    protected initializeRequest(response: DebugProtocol.InitializeResponse, args: DebugProtocol.InitializeRequestArguments): void {
+        super.initializeRequest(response, args);
+    }
+
+    protected launchRequest(response: DebugProtocol.LaunchResponse, launchArgs: ILaunchRequestArgs, request?: DebugProtocol.Request): Promise<void> {
+        return new Promise<void>((resolve, reject) => this.initializeSettings(launchArgs)
+            .then(() => {
                 logger.log("Launching the application");
-                logger.verbose(`Launching the application: ${JSON.stringify(launchArgs, null, 2)}`);
+                logger.verbose(`Launching the application: ${JSON.stringify(launchArgs, null , 2)}`);
 
-                await this.appLauncher.launch(launchArgs);
-
-                if (!launchArgs.enableDebug) {
-                    this.sendResponse(response);
-                    // if debugging is not enabled skip attach request
-                    return;
-                }
-            } catch (error) {
-                throw ErrorHelper.getInternalError(
-                    InternalErrorCode.ApplicationLaunchFailed,
-                    error.message || error,
-                );
-            }
-            // if debugging is enabled start attach request
-            await this.vsCodeDebugSession.customRequest("attach", launchArgs);
-            this.sendResponse(response);
-        } catch (error) {
-            this.terminateWithErrorResponse(error, response);
-        }
+                this.appLauncher.launch(launchArgs)
+                    .then(() => {
+                        return this.appLauncher.getPackagerPort(launchArgs.cwd);
+                    })
+                    .then((packagerPort: number) => {
+                        launchArgs.port = launchArgs.port || packagerPort;
+                        this.attachRequest(response, launchArgs).then(() => {
+                            resolve();
+                        }).catch((e) => reject(e));
+                    })
+                    .catch((err) => {
+                        logger.error("An error occurred while attaching to the debugger. " + err.message || err);
+                        reject(err);
+                    });
+            }));
     }
 
-    protected async attachRequest(
-        response: DebugProtocol.AttachResponse,
-        attachArgs: IAttachRequestArgs,
-        // eslint-disable-next-line @typescript-eslint/no-unused-vars
-        request?: DebugProtocol.Request,
-    ): Promise<void> {
+    protected attachRequest(response: DebugProtocol.AttachResponse, attachArgs: IAttachRequestArgs, request?: DebugProtocol.Request): Promise<void>  {
         let extProps = {
             platform: {
                 value: attachArgs.platform,
@@ -100,205 +80,136 @@ export class RNDebugSession extends DebugSessionBase {
 
         this.previousAttachArgs = attachArgs;
 
-        return new Promise<void>(async (resolve, reject) => {
-            try {
-                await this.initializeSettings(attachArgs);
-                logger.log("Attaching to the application");
-                logger.verbose(
-                    `Attaching to the application: ${JSON.stringify(attachArgs, null, 2)}`,
-                );
-
-                const versions = await ProjectVersionHelper.getReactNativeVersions(
-                    this.projectRootPath,
-                    ProjectVersionHelper.generateAdditionalPackagesToCheckByPlatform(attachArgs),
-                );
-                extProps = TelemetryHelper.addPlatformPropertiesToTelemetryProperties(
-                    attachArgs,
-                    versions,
-                    extProps,
-                );
-
-                // eslint-disable-next-line @typescript-eslint/no-unused-vars
-                await TelemetryHelper.generate("attach", extProps, async generator => {
-                    attachArgs.port =
-                        attachArgs.port || this.appLauncher.getPackagerPort(attachArgs.cwd);
-
-                    const cdpProxy = this.appLauncher.getRnCdpProxy();
-                    await cdpProxy.stopServer();
-                    await cdpProxy.initializeServer(
-                        new RnCDPMessageHandler(),
-                        this.cdpProxyLogLevel,
-                        this.cancellationTokenSource.token,
-                    );
-
-                    if (attachArgs.request === "attach") {
-                        await this.preparePackagerBeforeAttach(attachArgs, versions);
-                    }
-
-                    logger.log(
-                        localize("StartingDebuggerAppWorker", "Starting debugger app worker."),
-                    );
-
-                    const sourcesStoragePath = path.join(this.projectRootPath, ".vscode", ".react");
-                    // Create folder if not exist to avoid problems if
-                    // RN project root is not a ${workspaceFolder}
-                    mkdirp.sync(sourcesStoragePath);
-
-                    // If launch is invoked first time, appWorker is undefined, so create it here
-                    this.appWorker = new MultipleLifetimesAppWorker(
-                        attachArgs,
-                        sourcesStoragePath,
-                        this.projectRootPath,
-                        this.cancellationTokenSource.token,
-                        undefined,
-                    );
-                    this.appLauncher.setAppWorker(this.appWorker);
-
-                    this.appWorker.on("connected", (port: number) => {
-                        if (this.cancellationTokenSource.token.isCancellationRequested) {
-                            return this.appWorker?.stop();
-                        }
-
-                        logger.log(
-                            localize(
-                                "DebuggerWorkerLoadedRuntimeOnPort",
-                                "Debugger worker loaded runtime on port {0}",
-                                port,
-                            ),
-                        );
-
-                        cdpProxy.setApplicationTargetPort(port);
-
-                        if (this.debugSessionStatus === DebugSessionStatus.ConnectionPending) {
-                            return;
-                        }
-
-                        if (this.debugSessionStatus === DebugSessionStatus.FirstConnection) {
-                            this.debugSessionStatus = DebugSessionStatus.FirstConnectionPending;
-                            this.establishDebugSession(attachArgs, resolve);
-                        } else if (
-                            this.debugSessionStatus === DebugSessionStatus.ConnectionAllowed
-                        ) {
-                            if (this.nodeSession) {
-                                this.debugSessionStatus = DebugSessionStatus.ConnectionPending;
-                                void this.nodeSession.customRequest(this.terminateCommand);
-                            }
-                        }
-                    });
-
-                    if (this.cancellationTokenSource.token.isCancellationRequested) {
-                        return this.appWorker.stop();
-                    }
-                    return await this.appWorker.start();
-                });
-            } catch (error) {
-                reject(error);
-            }
-        })
+        return new Promise<void>((resolve, reject) => this.initializeSettings(attachArgs)
             .then(() => {
-                this.sendResponse(response);
-            })
-            .catch(err =>
-                this.terminateWithErrorResponse(
-                    ErrorHelper.getInternalError(
-                        InternalErrorCode.CouldNotAttachToDebugger,
-                        err.message || err,
-                    ),
-                    response,
-                ),
-            );
+                logger.log("Attaching to the application");
+                logger.verbose(`Attaching to the application: ${JSON.stringify(attachArgs, null , 2)}`);
+                return ProjectVersionHelper.getReactNativeVersions(attachArgs.cwd, true)
+                    .then(versions => {
+                        extProps = TelemetryHelper.addPropertyToTelemetryProperties(versions.reactNativeVersion, "reactNativeVersion", extProps);
+                        if (!ProjectVersionHelper.isVersionError(versions.reactNativeWindowsVersion)) {
+                            extProps = TelemetryHelper.addPropertyToTelemetryProperties(versions.reactNativeWindowsVersion, "reactNativeWindowsVersion", extProps);
+                        }
+                        return TelemetryHelper.generate("attach", extProps, (generator) => {
+                            logger.log(localize("StartingDebuggerAppWorker", "Starting debugger app worker."));
+
+                            const sourcesStoragePath = path.join(this.projectRootPath, ".vscode", ".react");
+                            // Create folder if not exist to avoid problems if
+                            // RN project root is not a ${workspaceFolder}
+                            mkdirp.sync(sourcesStoragePath);
+
+                            // If launch is invoked first time, appWorker is undefined, so create it here
+                            this.appWorker = new MultipleLifetimesAppWorker(
+                                attachArgs,
+                                sourcesStoragePath,
+                                this.projectRootPath,
+                                undefined);
+
+                            this.appWorker.on("connected", (port: number) => {
+                                logger.log(localize("DebuggerWorkerLoadedRuntimeOnPort", "Debugger worker loaded runtime on port {0}", port));
+
+                                const attachArguments = {
+                                    type: "node",
+                                    request: "attach",
+                                    name: "Attach",
+                                    port: port,
+                                };
+
+                                vscode.debug.startDebugging(
+                                    this.appLauncher.getWorkspaceFolder(),
+                                    attachArguments,
+                                    this.session
+                                )
+                                .then((childDebugSessionStarted: boolean) => {
+                                    if (childDebugSessionStarted) {
+                                        resolve();
+                                    } else {
+                                        reject(new Error("Can not start child debug session"));
+                                    }
+                                },
+                                err => {
+                                    reject(err);
+                                });
+                            });
+
+                            return this.appWorker.start();
+                        })
+                        .catch((err) => {
+                            logger.error("An error occurred while attaching to the debugger. " + err.message || err);
+                            reject(err);
+                        });
+                    });
+        }));
     }
 
-    protected async disconnectRequest(
-        response: DebugProtocol.DisconnectResponse,
-        args: DebugProtocol.DisconnectArguments,
-        request?: DebugProtocol.Request,
-    ): Promise<void> {
+    protected disconnectRequest(response: DebugProtocol.DisconnectResponse, args: DebugProtocol.DisconnectArguments, request?: DebugProtocol.Request): void {
         // The client is about to disconnect so first we need to stop app worker
         if (this.appWorker) {
             this.appWorker.stop();
         }
 
-        this.onDidStartDebugSessionHandler.dispose();
-        this.onDidTerminateDebugSessionHandler.dispose();
-
-        return super.disconnectRequest(response, args, request);
-    }
-
-    protected establishDebugSession(
-        attachArgs: IAttachRequestArgs,
-        resolve?: (value?: void | PromiseLike<void> | undefined) => void,
-    ): void {
-        const attachConfiguration = JsDebugConfigAdapter.createDebuggingConfigForPureRN(
-            attachArgs,
-            this.appLauncher.getCdpProxyPort(),
-            this.rnSession.sessionId,
-        );
-
-        vscode.debug
-            .startDebugging(this.appLauncher.getWorkspaceFolder(), attachConfiguration, {
-                parentSession: this.vsCodeDebugSession,
-                consoleMode: vscode.DebugConsoleMode.MergeWithParent,
-            })
-            .then(
-                (childDebugSessionStarted: boolean) => {
-                    if (childDebugSessionStarted) {
-                        this.debugSessionStatus = DebugSessionStatus.ConnectionDone;
-                        this.setConnectionAllowedIfPossible();
-                        if (resolve) {
-                            this.debugSessionStatus = DebugSessionStatus.ConnectionAllowed;
-                            resolve();
-                        }
-                    } else {
-                        this.debugSessionStatus = DebugSessionStatus.ConnectionFailed;
-                        this.setConnectionAllowedIfPossible();
-                        this.resetFirstConnectionStatus();
-                        throw new Error("Cannot start child debug session");
-                    }
-                },
-                err => {
-                    this.debugSessionStatus = DebugSessionStatus.ConnectionFailed;
-                    this.setConnectionAllowedIfPossible();
-                    this.resetFirstConnectionStatus();
-                    throw err;
-                },
-            );
-    }
-
-    private handleStartDebugSession(debugSession: vscode.DebugSession): void {
-        if (
-            debugSession.configuration.rnDebugSessionId === this.rnSession.sessionId &&
-            debugSession.type === this.pwaNodeSessionName
-        ) {
-            this.nodeSession = debugSession;
-        }
-    }
-
-    private handleTerminateDebugSession(debugSession: vscode.DebugSession): void {
-        if (
-            debugSession.configuration.rnDebugSessionId === this.rnSession.sessionId &&
-            debugSession.type === this.pwaNodeSessionName
-        ) {
-            if (this.debugSessionStatus === DebugSessionStatus.ConnectionPending) {
-                this.establishDebugSession(this.previousAttachArgs);
-            } else {
-                void this.terminate();
+        // Then we tell the extension to stop monitoring the logcat, and then we disconnect the debugging session
+        if (this.previousAttachArgs.platform === "android") {
+            try {
+                this.appLauncher.stopMonitoringLogCat();
+            } catch (err) {
+                logger.warn(localize("CouldNotStopMonitoringLogcat", "Couldn't stop monitoring logcat: {0}", err.message || err));
             }
         }
-    }
 
-    private setConnectionAllowedIfPossible(): void {
-        if (
-            this.debugSessionStatus === DebugSessionStatus.ConnectionDone ||
-            this.debugSessionStatus === DebugSessionStatus.ConnectionFailed
-        ) {
-            this.debugSessionStatus = DebugSessionStatus.ConnectionAllowed;
+        super.disconnectRequest(response, args, request);
+   }
+
+    private initializeSettings(args: any): Q.Promise<any> {
+        if (!this.isSettingsInitialized) {
+            let chromeDebugCoreLogs = getLoggingDirectory();
+            if (chromeDebugCoreLogs) {
+                chromeDebugCoreLogs = path.join(chromeDebugCoreLogs, "ChromeDebugCoreLogs.txt");
+            }
+            let logLevel: string = args.trace;
+            if (logLevel) {
+                logLevel = logLevel.replace(logLevel[0], logLevel[0].toUpperCase());
+                logger.setup(Logger.LogLevel[logLevel], chromeDebugCoreLogs || false);
+            } else {
+                logger.setup(Logger.LogLevel.Log, chromeDebugCoreLogs || false);
+            }
+
+            if (!args.sourceMaps) {
+                args.sourceMaps = true;
+            }
+
+            const projectRootPath = getProjectRoot(args);
+            return ReactNativeProjectHelper.isReactNativeProject(projectRootPath)
+                .then((result) => {
+                    if (!result) {
+                        throw ErrorHelper.getInternalError(InternalErrorCode.NotInReactNativeFolderError);
+                    }
+                    this.projectRootPath = projectRootPath;
+                    this.appLauncher = ProjectsStorage.projectsCache[projectRootPath];
+                    this.isSettingsInitialized = true;
+
+                    return void 0;
+                });
+        } else {
+            return Q.resolve<void>(void 0);
         }
     }
+}
 
-    private resetFirstConnectionStatus(): void {
-        if (this.debugSessionStatus === DebugSessionStatus.FirstConnectionPending) {
-            this.debugSessionStatus = DebugSessionStatus.FirstConnection;
-        }
+/**
+ * Parses settings.json file for workspace root property
+ */
+function getProjectRoot(args: any): string {
+    const vsCodeRoot = args.cwd ? path.resolve(args.cwd) : path.resolve(args.program, "../..");
+    const settingsPath = path.resolve(vsCodeRoot, ".vscode/settings.json");
+    try {
+        let settingsContent = fs.readFileSync(settingsPath, "utf8");
+        settingsContent = stripJsonComments(settingsContent);
+        let parsedSettings = JSON.parse(settingsContent);
+        let projectRootPath = parsedSettings["react-native-tools.projectRoot"] || parsedSettings["react-native-tools"].projectRoot;
+        return path.resolve(vsCodeRoot, projectRootPath);
+    } catch (e) {
+        logger.verbose(`${settingsPath} file doesn't exist or its content is incorrect. This file will be ignored.`);
+        return args.cwd ? path.resolve(args.cwd) : path.resolve(args.program, "../..");
     }
 }
