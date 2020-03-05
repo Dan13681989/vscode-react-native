@@ -3,25 +3,22 @@
 
 import { Viewlet } from "./viewlet";
 import { Commands } from "./workbench";
-import { Code, findElement} from "./code";
+import { Code, findElement } from "./code";
 import { Editors } from "./editors";
 import { Editor } from "./editor";
 import { IElement } from "../src/driver";
 
 const VIEWLET = "div[id=\"workbench.view.debug\"]";
-const DEBUG_VIEW = `${VIEWLET}`;
-const CONFIGURE = `div[id="workbench.parts.sidebar"] .actions-container .codicon-debug-configure`;
-const ADD_CONFIGURATION = `.overlayWidgets .floating-click-widget`;
+const DEBUG_VIEW = `${VIEWLET} .debug-view-content`;
+const CONFIGURE = `div[id="workbench.parts.sidebar"] .actions-container .configure`;
 const STOP = `.debug-toolbar .action-label[title*="Stop"]`;
-const RESTART = `.debug-toolbar .action-label[title*="Restart"]`;
 const STEP_OVER = `.debug-toolbar .action-label[title*="Step Over"]`;
 const STEP_IN = `.debug-toolbar .action-label[title*="Step Into"]`;
 const STEP_OUT = `.debug-toolbar .action-label[title*="Step Out"]`;
 const CONTINUE = `.debug-toolbar .action-label[title*="Continue"]`;
 const DISCONNECT = `.debug-toolbar .action-label[title*="Disconnect"]`;
 const GLYPH_AREA = ".margin-view-overlays>:nth-child";
-const BREAKPOINT_GLYPH = ".codicon-debug-breakpoint";
-const PAUSE = `.debug-toolbar .action-label[title*="Pause"]`;
+const BREAKPOINT_GLYPH = ".debug-breakpoint";
 const DEBUG_STATUS_BAR = `.statusbar.debugging`;
 const NOT_DEBUG_STATUS_BAR = `.statusbar:not(debugging)`;
 const TOOLBAR_HIDDEN = `.debug-toolbar[aria-hidden="true"]`;
@@ -71,36 +68,18 @@ export class Debug extends Viewlet {
         await this.editors.waitForEditorFocus("launch.json");
     }
 
-    public async addConfiguration(): Promise<any> {
-        await this.code.waitAndClick(ADD_CONFIGURATION);
-        await new Promise(c => setTimeout(c, 2000));
-        await this.code.dispatchKeybinding("enter");
-    }
-
     public async setBreakpointOnLine(lineNumber: number): Promise<any> {
         await this.code.waitForElement(`${GLYPH_AREA}(${lineNumber})`);
         await this.code.waitAndClick(`${GLYPH_AREA}(${lineNumber})`, 5, 5);
         await this.code.waitForElement(BREAKPOINT_GLYPH);
     }
 
-    public async startDebugging(): Promise<number> {
+    public async startDebugging(): Promise<void> {
         await this.code.dispatchKeybinding("f5");
-        await this.code.waitForElement(PAUSE);
-        await this.code.waitForElement(DEBUG_STATUS_BAR);
-        const portPrefix = "Port: ";
-
-        const output = await this.waitForOutput(output => output.some(line => line.indexOf(portPrefix) >= 0));
-        const lastOutput = output.filter(line => line.indexOf(portPrefix) >= 0)[0];
-
-        return lastOutput ? parseInt(lastOutput.substr(portPrefix.length)) : 3000;
     }
 
     public async waitForDebuggingToStart(): Promise<void> {
         await this.code.waitForElement(DEBUG_STATUS_BAR);
-    }
-
-    public async waitForDebugToolbarExist(): Promise<void> {
-        await this.code.waitForElement(RESTART);
     }
 
     public async areStackFramesExist(): Promise<any> {
@@ -175,4 +154,5 @@ export class Debug extends Viewlet {
         const elements = await this.code.waitForElements(CONSOLE_OUTPUT, false, elements => fn(elements.map(e => e.textContent)));
         return elements.map(e => e.textContent);
     }
+
 }
