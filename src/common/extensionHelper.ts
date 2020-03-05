@@ -72,3 +72,7 @@ export async function getVersionFromExtensionNodeModules(
     }
     return null;
 }
+
+export function generateRandomPortNumber() {
+    return Math.round(Math.random() * 40000 + 3000);
+}
