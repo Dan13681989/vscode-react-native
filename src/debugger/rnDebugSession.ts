@@ -124,6 +124,7 @@ export class RNDebugSession extends LoggingDebugSession {
                                                 request: "attach",
                                                 name: "Attach",
                                                 port: port,
+                                                smartStep: false,
                                                 inspectUri: this.rnCdpProxy.getInspectUriTemplate(),
                                             };
 
