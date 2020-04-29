@@ -202,7 +202,7 @@ export class RNDebugSession extends LoggingDebugSession {
         super.disconnectRequest(response, args, request);
     }
 
-    private establishDebugSession(resolve?: (value?: void | PromiseLike<void> | undefined) => void): void {
+    protected establishDebugSession(resolve?: (value?: void | PromiseLike<void> | undefined) => void): void {
         const attachArguments = {
             type: "pwa-node",
             request: "attach",
