@@ -23,6 +23,7 @@ const ExpoDebugConfigName = "Debug in Exponent";
 const ExpoLanDebugConfigName = "Debug in Exponent (LAN)";
 const ExpoLocalDebugConfigName = "Debug in Exponent (Local)";
 
+
 const RNSetBreakpointOnLine = 1;
 const RNHermesSetBreakpointOnLine = 11;
 const ExpoSetBreakpointOnLine = 1;
@@ -47,47 +48,41 @@ export function setup(testParameters?: TestRunArguments) {
             }
         });
 
-        async function runExpoDebugScenario(logFilePath: string, testName: string, workspacePath: string, debugConfigName: string, triesToLaunchApp: number) {
+        async function expoTest(testName: string, workspacePath: string, debugConfigName: string, triesToLaunchApp: number) {
+            app = await runVSCode(workspacePath);
+            console.log(`${testName}: ${workspacePath} directory is opened in VS Code`);
+            await app.workbench.quickaccess.openFile("App.js");
+            await app.workbench.editors.scrollTop();
+            console.log(`${testName}: App.js file is opened`);
+            await app.workbench.debug.setBreakpointOnLine(ExpoSetBreakpointOnLine);
+            console.log(`${testName}: Breakpoint is set on line ${ExpoSetBreakpointOnLine}`);
+            console.log(`${testName}: Chosen debug configuration: ${debugConfigName}`);
             console.log(`${testName}: Starting debugging`);
             // Scan logs only if launch retries provided (Expo Tunnel scenarios)
             if (triesToLaunchApp <= 1) {
                 await app.workbench.quickaccess.runDebugScenario(debugConfigName);
             } else {
-                for (let retry = 1; retry <= triesToLaunchApp; retry++) {
-                    let expoLaunchStatus: ExpoLaunch;
-                    await app.workbench.quickaccess.runDebugScenario(debugConfigName);
-                    expoLaunchStatus = await findExpoSuccessAndFailurePatterns(logFilePath, SmokeTestsConstants.ExpoSuccessPattern, SmokeTestsConstants.ExpoFailurePattern);
-                    if (expoLaunchStatus.successful) {
-                        break;
-                    } else {
-                        if (retry === triesToLaunchApp) {
-                            assert.fail(`App start has failed after ${retry} retries`);
+                if (process.env.REACT_NATIVE_TOOLS_LOGS_DIR) {
+                    for (let retry = 1; retry <= triesToLaunchApp; retry++) {
+                        let expoLaunchStatus: ExpoLaunch;
+                        await app.workbench.quickaccess.runDebugScenario(debugConfigName);
+                        expoLaunchStatus = await findExpoSuccessAndFailurePatterns(path.join(process.env.REACT_NATIVE_TOOLS_LOGS_DIR, SmokeTestsConstants.ReactNativeLogFileName), SmokeTestsConstants.ExpoSuccessPattern, SmokeTestsConstants.ExpoFailurePattern);
+                        if (expoLaunchStatus.successful) {
+                            break;
+                        } else {
+                            if (retry === triesToLaunchApp) {
+                                assert.fail(`App start has failed after ${retry} retries`);
+                            }
+                            console.log(`Attempt to start #${retry} failed, retrying...`);
                         }
-                        console.log(`Attempt to start #${retry} failed, retrying...`);
                     }
+                } else {
+                    assert.fail("REACT_NATIVE_TOOLS_LOGS_DIR is not defined");
                 }
             }
-        }
 
-        async function expoTest(appFileName: string, testName: string, workspacePath: string, debugConfigName: string, triesToLaunchApp: number, isPureExpo: boolean = false) {
-            let logFilePath = "";
-            app = await runVSCode(workspacePath);
-            console.log(`${testName}: ${workspacePath} directory is opened in VS Code`);
-            await app.workbench.quickaccess.openFile(appFileName);
-            await app.workbench.editors.scrollTop();
-            console.log(`${testName}: ${appFileName} file is opened`);
-            await app.workbench.debug.setBreakpointOnLine(ExpoSetBreakpointOnLine);
-            console.log(`${testName}: Breakpoint is set on line ${ExpoSetBreakpointOnLine}`);
-            console.log(`${testName}: Chosen debug configuration: ${debugConfigName}`);
-            if (process.env.REACT_NATIVE_TOOLS_LOGS_DIR) {
-                logFilePath = path.join(process.env.REACT_NATIVE_TOOLS_LOGS_DIR, SmokeTestsConstants.ReactNativeLogFileName);
-            } else {
-                assert.fail("REACT_NATIVE_TOOLS_LOGS_DIR is not defined");
-            }
-            await runExpoDebugScenario(logFilePath, testName, workspacePath, debugConfigName, triesToLaunchApp);
-
-            await app.workbench.editors.waitForTab("Expo QR Code", false, true);
-            await app.workbench.editors.waitForActiveTab("Expo QR Code", false, true);
+            await app.workbench.editors.waitForTab("Expo QR Code readonly");
+            await app.workbench.editors.waitForActiveTab("Expo QR Code readonly");
             console.log(`${testName}: 'Expo QR Code' tab found`);
 
             let expoURL;
@@ -104,12 +99,12 @@ export function setup(testParameters?: TestRunArguments) {
             // TODO Add listener to trigger that child expo app has been ran instead of using timeout
             console.log(`${testName}: Waiting ${SmokeTestsConstants.expoAppBuildAndInstallTimeout}ms until Expo app is ready...`);
             await sleep(SmokeTestsConstants.expoAppBuildAndInstallTimeout);
-            await AppiumHelper.disableDevMenuInformationalMsg(clientInited, Platform.AndroidExpo);
+            await AppiumHelper.disableDevMenuInformationalMsg(clientInited, Platform.Android_Expo);
             await sleep(2 * 1000);
-            await AppiumHelper.enableRemoteDebugJS(clientInited, Platform.AndroidExpo);
+            await AppiumHelper.enableRemoteDebugJS(clientInited, Platform.Android_Expo);
             await app.workbench.debug.waitForDebuggingToStart();
             console.log(`${testName}: Debugging started`);
-            await app.workbench.debug.waitForStackFrame(sf => sf.name === appFileName && sf.lineNumber === ExpoSetBreakpointOnLine, `looking for ${appFileName} and line ${ExpoSetBreakpointOnLine}`);
+            await app.workbench.debug.waitForStackFrame(sf => sf.name === "App.js" && sf.lineNumber === ExpoSetBreakpointOnLine, `looking for App.js and line ${ExpoSetBreakpointOnLine}`);
             console.log(`${testName}: Stack frame found`);
             await app.workbench.debug.stepOver();
             // Wait for debug string to be rendered in debug console
@@ -190,7 +185,7 @@ export function setup(testParameters?: TestRunArguments) {
             await sleep(SmokeTestsConstants.debugConsoleSearchTimeout);
             if (process.env.REACT_NATIVE_TOOLS_LOGS_DIR) {
                 console.log("Android Debug Hermes test: Searching for \"Test output from Hermes debuggee\" string in output file");
-                let found = findStringInFile(path.join(process.env.REACT_NATIVE_TOOLS_LOGS_DIR, SmokeTestsConstants.ReactNativeLogFileName), "Test output from Hermes debuggee");
+                let found = findStringInFile(path.join(process.env.REACT_NATIVE_TOOLS_LOGS_DIR, SmokeTestsConstants.ChromeDebugCoreLogFileName), "Test output from Hermes debuggee");
                 assert.notStrictEqual(found, false, "\"Test output from Hermes debuggee\" string is missing in output file");
                 console.log("Android Debug test: \"Test output from Hermes debuggee\" string is found");
             }
@@ -203,7 +198,7 @@ export function setup(testParameters?: TestRunArguments) {
                 this.skip();
             }
             this.timeout(debugExpoTestTime);
-            await expoTest("App.tsx","Android Expo Debug test(Tunnel)", ExpoWorkspacePath, ExpoDebugConfigName, 5);
+            await expoTest("Android Expo Debug test(Tunnel)", ExpoWorkspacePath, ExpoDebugConfigName, 5);
         });
 
         it("Pure RN app Expo test(LAN)", async function () {
@@ -211,7 +206,7 @@ export function setup(testParameters?: TestRunArguments) {
                 this.skip();
             }
             this.timeout(debugExpoTestTime);
-            await expoTest("App.js", "Android pure RN Expo test(LAN)", pureRNWorkspacePath, ExpoLanDebugConfigName, 1, true);
+            await expoTest("Android pure RN Expo test(LAN)", pureRNWorkspacePath, ExpoLanDebugConfigName, 1);
         });
 
         it("Expo app Debug test(LAN)", async function () {
@@ -219,7 +214,7 @@ export function setup(testParameters?: TestRunArguments) {
                 this.skip();
             }
             this.timeout(debugExpoTestTime);
-            await expoTest("App.tsx", "Android Expo Debug test(LAN)", ExpoWorkspacePath, ExpoLanDebugConfigName, 1);
+            await expoTest("Android Expo Debug test(LAN)", ExpoWorkspacePath, ExpoLanDebugConfigName, 1);
         });
 
         it("Expo app Debug test(localhost)", async function () {
@@ -227,7 +222,7 @@ export function setup(testParameters?: TestRunArguments) {
                 this.skip();
             }
             this.timeout(debugExpoTestTime);
-            await expoTest("App.tsx", "Android Expo Debug test(localhost)", ExpoWorkspacePath, ExpoLocalDebugConfigName, 1);
+            await expoTest("Android Expo Debug test(localhost)", ExpoWorkspacePath, ExpoLocalDebugConfigName, 1);
         });
     });
 }
