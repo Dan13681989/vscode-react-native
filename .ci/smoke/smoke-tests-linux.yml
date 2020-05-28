@@ -1,11 +1,13 @@
 trigger:
-  - legacy
+  - master
+  - dev/js-debug-migration
 pr:
-  - legacy
+  - master
+  - dev/js-debug-migration
 
 variables:
   vswdbotLogin: vswdbot
-  appiumVersion: 1.18.1
+  appiumVersion: 1.17.0
   basicOnly: false
   expoCLIVersion: latest
   nightlyBuild: false
@@ -14,9 +16,9 @@ variables:
 jobs:
   - job: Linux
     pool:
-      name: "React Native smoke tests - Linux"
+      name: 'React Native smoke tests - Linux'
     timeoutInMinutes: 30
     steps:
-      - checkout: self
-        clean: true
-      - template: smoke-tests-common-validation.yml
+    - checkout: self
+      clean: true
+    - template: smoke-tests-common-validation.yml
