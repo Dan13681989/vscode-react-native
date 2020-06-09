@@ -190,7 +190,7 @@ export function setup(testParameters?: TestRunArguments) {
             await sleep(SmokeTestsConstants.debugConsoleSearchTimeout);
             if (process.env.REACT_NATIVE_TOOLS_LOGS_DIR) {
                 console.log("Android Debug Hermes test: Searching for \"Test output from Hermes debuggee\" string in output file");
-                let found = findStringInFile(path.join(process.env.REACT_NATIVE_TOOLS_LOGS_DIR, SmokeTestsConstants.ChromeDebugCoreLogFileName), "Test output from Hermes debuggee");
+                let found = findStringInFile(path.join(process.env.REACT_NATIVE_TOOLS_LOGS_DIR, SmokeTestsConstants.ReactNativeLogFileName), "Test output from Hermes debuggee");
                 assert.notStrictEqual(found, false, "\"Test output from Hermes debuggee\" string is missing in output file");
                 console.log("Android Debug test: \"Test output from Hermes debuggee\" string is found");
             }
