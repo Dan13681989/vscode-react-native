@@ -8,6 +8,7 @@ import * as request from "request";
 import * as URL from "url-parse";
 import { SpawnSyncOptions } from "child_process";
 import { SmokeTestsConstants } from "./smokeTestsConstants";
+import { AndroidEmulatorHelper } from "./androidEmulatorHelper";
 
 export function sanitize(name: string): string {
     return name.replace(/[&*:\/]/g, "");
@@ -134,16 +135,6 @@ export interface ExpoLaunch {
     failed: boolean;
 }
 
-function getEmulatorsNamesList(): string[] {
-    const res = cp.execSync("emulator -list-avds");
-    let emulatorsList: string[] = [];
-    if (res) {
-        const resString = res.toString();
-        emulatorsList = resString.split(/\r?\n|\r/g);
-    }
-    return emulatorsList;
-}
-
 export function waitUntilLaunchScenarioTargetUpdate(workspaceRoot: string): Promise<boolean> {
     return new Promise((resolve) => {
         const LAUNCH_UPDATE_TIMEOUT = 30;
@@ -169,9 +160,8 @@ export function waitUntilLaunchScenarioTargetUpdate(workspaceRoot: string): Prom
 
 export function isLaunchScenarioTargetUpdate(workspaceRoot: string): boolean {
     const pathToLaunchFile = path.resolve(workspaceRoot, ".vscode", "launch.json");
-    const emulatorsList = getEmulatorsNamesList();
-    const firstEmulatorName = emulatorsList[0];
-    return findStringInFile(pathToLaunchFile, `"target": "${firstEmulatorName}"`);
+    const emulatorName = AndroidEmulatorHelper.getDevice();
+    return findStringInFile(pathToLaunchFile, `"target": "${emulatorName}"`);
 }
 
 export async function waitForRunningPackager(filePath: string) {
