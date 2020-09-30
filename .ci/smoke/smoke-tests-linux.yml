@@ -1,13 +1,13 @@
 trigger:
   - master
-  - dev/js-debug-migration
+  - preview
 pr:
   - master
-  - dev/js-debug-migration
+  - preview
 
 variables:
   vswdbotLogin: vswdbot
-  appiumVersion: 1.17.0
+  appiumVersion: 1.18.2
   basicOnly: false
   expoCLIVersion: latest
   nightlyBuild: false
