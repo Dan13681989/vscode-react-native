@@ -393,7 +393,7 @@ export class CommandPaletteHandler {
             runArguments: runArgs,
             env: envArgs,
             envFile: envFile,
-            reactNativeVersions: appLauncher.getReactNativeVersions() || {reactNativeVersion: "", reactNativeWindowsVersion: ""},
+            reactNativeVersions: appLauncher.getReactNativeVersions() || { reactNativeVersion: "", reactNativeWindowsVersion: "", reactNativeMacOSVersion: "" },
         };
 
         CommandExecutor.ReactNativeCommand = SettingsHelper.getReactNativeGlobalCommandName(appLauncher.getWorkspaceFolderUri());
