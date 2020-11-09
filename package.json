@@ -1,7 +1,7 @@
 {
   "name": "vscode-react-native",
   "displayName": "React Native Tools",
-  "version": "1.0.0",
+  "version": "1.1.1",
   "private": true,
   "publisher": "msjsdiag",
   "icon": "images/icon.png",
@@ -47,28 +47,6 @@
   ],
   "main": "./src/extension/rn-extension",
   "contributes": {
-    "languages": [
-      {
-        "id": "ReactNativeToolsOutput",
-        "extensions": [
-          ".log"
-        ],
-        "mimetypes": [
-          "log",
-          "text/log",
-          "text/x-log",
-          "text/x-code-output",
-          "x-code-output"
-        ]
-      }
-    ],
-    "grammars": [
-      {
-        "language": "ReactNativeToolsOutput",
-        "scopeName": "react-native-tools-output",
-        "path": "./syntaxes/rn-output.tmGrammar.json"
-      }
-    ],
     "commands": [
       {
         "command": "reactNative.launchAndroidSimulator",
@@ -208,6 +186,17 @@
             }
           },
           {
+            "label": "React Native: Debug macOS",
+            "description": "%reactNative.snippets.debugmacOS.description%",
+            "body": {
+              "name": "Debug macOS",
+              "cwd": "^\"\\${workspaceFolder}\"",
+              "type": "reactnative",
+              "request": "launch",
+              "platform": "macos"
+            }
+          },
+          {
             "label": "React Native: Attach to packager",
             "description": "%reactNative.snippets.attachPackager.description%",
             "body": {
@@ -313,7 +302,8 @@
                   "android",
                   "exponent",
                   "windows",
-                  "wpf"
+                  "wpf",
+                  "macos"
                 ],
                 "description": "%reactNative.launch.platform.description%"
               },
@@ -428,6 +418,11 @@
               "enableDebug": {
                 "type": "boolean",
                 "description": "%reactNative.launch.enableDebug.description%",
+                "default": true
+              },
+              "openExpoQR": {
+                "type": "boolean",
+                "description": "%reactNative.launch.openExpoQR.description%",
                 "default": true
               }
             }
