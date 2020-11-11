@@ -3,6 +3,7 @@
 
 import * as fs from "fs";
 import { IosSimulatorHelper } from "./iosSimulatorHelper";
+import { SmokeTestLogger } from "./smokeTestLogger";
 
 export interface TestRunArguments {
     RunAndroidTests: boolean;
@@ -24,6 +25,7 @@ export interface TestEnvVariables {
     RN_VERSION?: string;
     PURE_RN_VERSION?: string;
     PURE_EXPO_VERSION?: string;
+    RN_MAC_OS_VERSION?: string;
     RNW_VERSION?: string;
 }
 
@@ -51,22 +53,25 @@ export class TestConfigurator {
             throw new Error(`Missing CODE_VERSION variable`);
         }
         if (!variables.EXPO_XDL_VERSION) {
-            console.warn("Optional EXPO_XDL_VERSION variable is not set");
+            SmokeTestLogger.warn("Optional EXPO_XDL_VERSION variable is not set");
         }
         if (!variables.EXPO_SDK_MAJOR_VERSION) {
-            console.warn("Optional EXPO_SDK_MAJOR_VERSION variable is not set. Use latest.");
+            SmokeTestLogger.warn("Optional EXPO_SDK_MAJOR_VERSION variable is not set. Use latest.");
         }
         if (!variables.RN_VERSION) {
-            console.warn("Optional RN_VERSION variable is not set");
+            SmokeTestLogger.warn("Optional RN_VERSION variable is not set");
         }
         if (!variables.PURE_RN_VERSION) {
-            console.warn("Optional PURE_RN_VERSION variable is not set");
+            SmokeTestLogger.warn("Optional PURE_RN_VERSION variable is not set");
         }
         if (!variables.PURE_EXPO_VERSION) {
-            console.warn("Optional PURE_EXPO_VERSION variable is not set");
+            SmokeTestLogger.warn("Optional PURE_EXPO_VERSION variable is not set");
+        }
+        if (!variables.RN_MAC_OS_VERSION) {
+            SmokeTestLogger.warn("Optional RN_MAC_OS_VERSION variable is not set");
         }
         if (!variables.RNW_VERSION) {
-            console.warn("Optional PURE_EXPO_VERSION variable is not set");
+            SmokeTestLogger.warn("Optional PURE_EXPO_VERSION variable is not set");
         }
     }
 
@@ -83,7 +88,7 @@ export class TestConfigurator {
         let variables: any;
 
         if (fs.existsSync(envConfigFilePath)) {
-            console.log(`*** Config file "${envConfigFilePath}" is found, reading variables from there`);
+            SmokeTestLogger.success(`*** Config file "${envConfigFilePath}" is found, reading variables from there`);
             variables = JSON.parse(fs.readFileSync(envConfigFilePath).toString());
         }
 
@@ -108,6 +113,9 @@ export class TestConfigurator {
         if (variables.PURE_EXPO_VERSION === "skip" || process.env.NIGHTLY) {
             delete variables.PURE_EXPO_VERSION;
         }
+        if (variables.RN_MAC_OS_VERSION === "skip" || process.env.NIGHTLY) {
+            delete variables.RN_MAC_OS_VERSION;
+        }
         if (variables.RNW_VERSION === "skip" || process.env.NIGHTLY) {
             delete variables.RNW_VERSION;
         }
@@ -130,7 +138,8 @@ export class TestConfigurator {
         initLog += `RNW_VERSION = ${process.env.RNW_VERSION}\n`;
         initLog += `PURE_RN_VERSION = ${process.env.PURE_RN_VERSION}\n`;
         initLog += `PURE_EXPO_VERSION = ${process.env.PURE_EXPO_VERSION}\n`;
-        console.log(initLog);
+        initLog += `RN_MAC_OS_VERSION = ${process.env.RN_MAC_OS_VERSION}\n`;
+        SmokeTestLogger.info(initLog);
     }
 
     public static parseTestArguments(): TestRunArguments {
