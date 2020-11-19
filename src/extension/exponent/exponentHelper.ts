@@ -199,7 +199,7 @@ var { AppRegistry } = ReactNative;
 AppRegistry.registerRunnable('main', function(appParameters) {
     AppRegistry.runApplication('${name}', appParameters);
 });
-require('${entryPoint}');`;
+var entryPoint = require('${entryPoint}');`;
     }
 
     private patchAppJson(isExpo: boolean = true): Promise<void> {
