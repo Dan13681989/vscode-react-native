@@ -143,7 +143,7 @@ export abstract class DebugSessionBase extends LoggingDebugSession {
         // Then we tell the extension to stop monitoring the logcat, and then we disconnect the debugging session
         if (this.previousAttachArgs && this.previousAttachArgs.platform === "android") {
             try {
-                this.appLauncher.stopMonitoringLogCat();
+                this.appLauncher.getMobilePlatform().dispose();
             } catch (err) {
                 logger.warn(localize("CouldNotStopMonitoringLogcat", "Couldn't stop monitoring logcat: {0}", err.message || err));
             }
