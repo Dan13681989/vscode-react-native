@@ -55,6 +55,7 @@ export interface IAttachRequestArgs
     cwd: string /* Automatically set by VS Code to the currently opened folder */;
     port: number;
     url?: string;
+    useHermesEngine: boolean;
     address?: string;
     trace?: string;
     skipFiles?: [];
