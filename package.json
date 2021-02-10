@@ -551,7 +551,8 @@
                 "type": "string",
                 "enum": [
                   "ios",
-                  "android"
+                  "android",
+                  "macos"
                 ],
                 "description": "%reactNative.launch.direct.platform.description%"
               },
@@ -607,7 +608,8 @@
                 "type": "string",
                 "enum": [
                   "android",
-                  "ios"
+                  "ios",
+                  "macos"
                 ],
                 "description": "%reactNative.launch.direct.platform.description%"
               },
