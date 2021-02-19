@@ -1,51 +1,17 @@
 // Copyright (c) Microsoft Corporation. All rights reserved.
 // Licensed under the MIT license. See LICENSE file in the project root for details.
 
-import * as path from "path";
 import { OutputChannelLogger } from "../extension/log/OutputChannelLogger";
-import { AppLauncher } from "../extension/appLauncher";
 import { CommandExecutor, CommandVerbosity } from "./commandExecutor";
 import customRequire from "./customRequire";
-import { findFileInFolderHierarchy, getVersionFromExtensionNodeModules } from "./extensionHelper";
+import { findFileInFolderHierarchy } from "./extensionHelper";
 import { HostPlatform } from "./hostPlatform";
-import { PromiseUtil } from "./node/promise";
+import * as path from "path";
 
-const WRONG_VERSION_ERROR =
-    "The installed version of the package is different from the required one";
-
-export class PackageConfig {
-    constructor(
-        private packageName: string,
-        private version?: string,
-        private requirePath?: string,
-    ) {}
-
-    public getPackageName(): string {
-        return this.packageName;
-    }
-    public getRequirePath(): string | undefined {
-        return this.requirePath;
-    }
-    public getVersion(withPrefix = false): string | undefined {
-        if (withPrefix) {
-            return this.version ? `@${this.version}` : "";
-        }
-        return this.version;
-    }
-
-    public getStringForInstall(): string {
-        return `${this.packageName}${String(this.getVersion(true))}`;
-    }
-
-    public getStringForRequire(): string {
-        return this.packageName + (this.requirePath ? `/${this.requirePath}` : "");
-    }
-}
-
-export class PackageLoader {
+export default class PackageLoader {
     private logger: OutputChannelLogger;
     private packagesQueue: string[];
-    private requireQueue: ((load?: string[]) => Promise<boolean>)[];
+    private requireQueue: ((load?: string[]) => boolean)[];
     private isCommandsExecuting: boolean;
 
     private static instance: PackageLoader;
@@ -64,26 +30,20 @@ export class PackageLoader {
         return this.instance;
     }
 
-    public installGlobalPackage(packageConfig: PackageConfig, projectRoot: string): Promise<void> {
-        const nodeModulesRoot: string = AppLauncher.getNodeModulesRootByProjectPath(projectRoot);
-        const commandExecutor = new CommandExecutor(nodeModulesRoot, projectRoot, this.logger);
-
-        return commandExecutor.spawnWithProgress(
-            HostPlatform.getNpmCliCommand("npm"),
-            ["install", "-g", packageConfig.getStringForInstall(), "--verbose"],
-            {
-                verbosity: CommandVerbosity.PROGRESS,
-            },
-        );
-    }
-
     public generateGetPackageFunction<T>(
-        packageConfig: PackageConfig,
-        ...additionalDependencies: PackageConfig[]
+        packageName: string,
+        ...additionalDependencies: string[]
     ): () => Promise<T> {
-        return PromiseUtil.promiseCacheDecorator<T>(() =>
-            this.loadPackage<T>(packageConfig, ...additionalDependencies),
-        );
+        let promise: Promise<T>;
+        return (): Promise<T> => {
+            // Using the promise saved in lexical environment to prevent module reloading
+            if (promise) {
+                return promise;
+            } else {
+                promise = this.loadPackage<T>(packageName, ...additionalDependencies);
+                return promise;
+            }
+        };
     }
 
     private getUniquePackages(packages: string[]): string[] {
@@ -91,103 +51,73 @@ export class PackageLoader {
     }
 
     private getTryToRequireFunction<T>(
-        packageConfig: PackageConfig,
+        packageName: string,
         resolve: (value: T | PromiseLike<T>) => void,
         reject: (reason?: any) => void,
-    ): (load?: string[]) => Promise<boolean> {
+    ): (load?: string[]) => boolean {
         return (load?: string[]) => {
-            let packageWasInstalled = false;
+            let itWasInstalled = false;
             // Throw exception if we could not find package after installing
-            if (load && load.includes(packageConfig.getStringForInstall())) {
-                packageWasInstalled = true;
+            if (load && load.includes(packageName)) {
+                itWasInstalled = true;
             }
-            return this.tryToRequire<T>(packageConfig, resolve, reject, packageWasInstalled);
+            return this.tryToRequire<T>(packageName, resolve, reject, itWasInstalled);
         };
     }
 
-    private async tryToRequire<T>(
-        packageConfig: PackageConfig,
+    private tryToRequire<T>(
+        packageName: string,
         resolve: (value: T | PromiseLike<T>) => void,
         reject: (reason?: any) => void,
-        packageWasInstalled: boolean,
-    ): Promise<boolean> {
-        const requiredPackage = packageConfig.getStringForRequire();
+        itWasInstalled: boolean,
+    ): boolean {
         try {
-            this.logger.debug(`Getting ${requiredPackage} dependency.`);
-            if (packageConfig.getVersion()) {
-                const installedVersion = await getVersionFromExtensionNodeModules(
-                    packageConfig.getPackageName(),
-                );
-
-                if (packageConfig.getVersion() !== installedVersion) {
-                    if (packageWasInstalled) {
-                        throw WRONG_VERSION_ERROR;
-                    }
-                    this.logger.debug(
-                        `Dependency ${requiredPackage} is present with another version. Retry after install this package with specific version...`,
-                    );
-                    return false;
-                }
-            }
-            const module = customRequire(requiredPackage);
+            this.logger.debug(`Getting ${packageName} dependency.`);
+            const module = customRequire(packageName);
             resolve(module);
             return true;
         } catch (e) {
-            if (packageWasInstalled || e.code !== "MODULE_NOT_FOUND") {
+            if (itWasInstalled || e.code !== "MODULE_NOT_FOUND") {
                 reject(e);
                 return true;
             }
-            this.logger.debug(
-                `Dependency ${requiredPackage} is not present. Retry after install...`,
-            );
+            this.logger.debug(`Dependency ${packageName} is not present. Retry after install...`);
             return false;
         }
     }
 
     private async tryToRequireAfterInstall(
-        tryToRequire: (load?: string[]) => Promise<boolean>,
-        packageConfig: PackageConfig,
-        ...additionalDependencies: PackageConfig[]
-    ): Promise<void> {
-        this.packagesQueue.push(packageConfig.getStringForInstall());
-        additionalDependencies.forEach(dependency => {
-            this.packagesQueue.push(dependency.getStringForInstall());
-        });
+        tryToRequire: (load?: string[]) => boolean,
+        packageName: string,
+        ...additionalDependencies: string[]
+    ) {
+        this.packagesQueue.push(packageName, ...additionalDependencies);
         this.requireQueue.push(tryToRequire);
         if (!this.isCommandsExecuting) {
             this.isCommandsExecuting = true;
-
-            const extensionDirectory: string = path.dirname(
-                findFileInFolderHierarchy(__dirname, "package.json") || __dirname,
-            );
-
             const commandExecutor = new CommandExecutor(
-                path.join(extensionDirectory, "node_modules"),
-                extensionDirectory,
+                path.dirname(findFileInFolderHierarchy(__dirname, "package.json") || __dirname),
                 this.logger,
             );
-
             while (this.packagesQueue.length) {
                 // Install all packages in queue
                 this.packagesQueue = this.getUniquePackages(this.packagesQueue);
-
                 const load = this.packagesQueue.length;
                 const packagesForInstall = this.packagesQueue.slice(0, load);
-
                 await commandExecutor.spawnWithProgress(
                     HostPlatform.getNpmCliCommand("npm"),
-                    ["install", ...packagesForInstall, "--verbose", "--no-save", "--global-style"],
+                    ["install", ...packagesForInstall, "--verbose", "--no-save"],
                     {
                         verbosity: CommandVerbosity.PROGRESS,
                     },
                 );
                 // Try to require all pending packages after every 'npm install ...' command
-                const requiresToRemove: ((load?: string[]) => Promise<boolean>)[] = [];
-                for (tryToRequire of this.requireQueue) {
-                    if (await tryToRequire(packagesForInstall)) {
+                const requiresToRemove: ((load?: string[]) => boolean)[] = [];
+                this.requireQueue.forEach(tryToRequire => {
+                    if (tryToRequire(packagesForInstall)) {
                         requiresToRemove.push(tryToRequire);
                     }
-                }
+                });
                 // Remove resolved requires from queue
                 requiresToRemove.forEach(tryToRequire => {
                     const index = this.requireQueue.indexOf(tryToRequire);
@@ -199,7 +129,7 @@ export class PackageLoader {
                 if (this.requireQueue.length) {
                     this.packagesQueue = this.getUniquePackages(this.packagesQueue);
                     packagesForInstall.forEach(module => {
-                        const index = this.packagesQueue.indexOf(module);
+                        const index = this.packagesQueue.findIndex(el => el === module);
                         if (index !== -1) {
                             this.packagesQueue.splice(index, 1);
                         }
@@ -213,17 +143,13 @@ export class PackageLoader {
     }
 
     private async loadPackage<T>(
-        packageConfig: PackageConfig,
-        ...additionalDependencies: PackageConfig[]
+        packageName: string,
+        ...additionalDependencies: string[]
     ): Promise<T> {
         return new Promise(async (resolve: (value: T) => void, reject) => {
-            const tryToRequire = this.getTryToRequireFunction(packageConfig, resolve, reject);
-            if (!(await tryToRequire())) {
-                this.tryToRequireAfterInstall(
-                    tryToRequire,
-                    packageConfig,
-                    ...additionalDependencies,
-                ).catch(reason => reject(reason));
+            const tryToRequire = this.getTryToRequireFunction(packageName, resolve, reject);
+            if (!tryToRequire()) {
+                this.tryToRequireAfterInstall(tryToRequire, packageName, ...additionalDependencies);
             }
         });
     }
