@@ -9,6 +9,7 @@ import { Packager } from "../common/packager";
 import { SystemColorTheme } from "../common/editorColorThemesHelper";
 import { stripJsonTrailingComma } from "../common/utils";
 import { LogLevel } from "./log/LogHelper";
+import { SystemColorTheme } from "../common/editorColorThemesHelper";
 import { PackagerStatusIndicator } from "./packagerStatusIndicator";
 
 export class SettingsHelper {

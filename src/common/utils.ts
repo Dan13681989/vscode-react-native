@@ -19,6 +19,10 @@ export function getFileNameWithoutExtension(fileName: string) {
     return path.basename(fileName, path.extname(fileName));
 }
 
+export function notNullOrUndefined<T>(value: T | null | undefined): value is T {
+    return !isNullOrUndefined(value);
+}
+
 export function getFormattedTimeString(date: Date): string {
     const hourString = padZeroes(2, String(date.getUTCHours()));
     const minuteString = padZeroes(2, String(date.getUTCMinutes()));

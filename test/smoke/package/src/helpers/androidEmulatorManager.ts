@@ -222,6 +222,11 @@ export default class AndroidEmulatorManager {
         cp.execSync(`adb reverse tcp:${port} tcp:${port}`);
     }
 
+    public static adbReversePort(port: number) {
+        SmokeTestLogger.info(`*** Forwarding port ${port} on an Android emulator.`);
+        cp.execSync(`adb reverse tcp:${port} tcp:${port}`);
+    }
+
     public async waitUntilEmulatorTerminating(): Promise<boolean> {
         SmokeTestLogger.info("*** Wait for Android emulator terminating...");
 
