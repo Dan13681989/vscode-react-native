@@ -14,7 +14,7 @@ import * as sinon from "sinon";
 suite("packager", function () {
     suite("extensionContext", function () {
         let requestStub: Sinon.SinonStub;
-        let isExpoManagedAppStub: Sinon.SinonStub;
+        let isExpoAppStub: Sinon.SinonStub;
         let getExpPackagerOptionsStub: Sinon.SinonStub;
 
         const WORKSPACE_PATH: string = "/workspace";
@@ -22,7 +22,7 @@ suite("packager", function () {
 
         setup(() => {
             requestStub = sinon.stub(Request, "request");
-            isExpoManagedAppStub = sinon.stub(ExponentHelper.prototype, "isExpoManagedApp");
+            isExpoAppStub = sinon.stub(ExponentHelper.prototype, "isExpoApp");
             getExpPackagerOptionsStub = sinon.stub(
                 ExponentHelper.prototype,
                 "getExpPackagerOptions",
@@ -31,101 +31,101 @@ suite("packager", function () {
 
         teardown(() => {
             requestStub.restore();
-            isExpoManagedAppStub.restore();
+            isExpoAppStub.restore();
             getExpPackagerOptionsStub.restore();
         });
 
-        test("isRunning should check correct status URL", async function () {
+        test("isRunning should check correct status URL", function (done) {
             requestStub.returns(Promise.resolve("packager-status:running"));
 
-            try {
-                const isRunning = await new Packager(
-                    WORKSPACE_PATH,
-                    PROJECT_PATH,
-                    Packager.DEFAULT_PORT,
-                ).isRunning();
-                assert(isRunning);
-                assert(
-                    requestStub.firstCall.args[0].match(
-                        "http://localhost:" + Packager.DEFAULT_PORT,
-                    ),
-                );
-            } catch (error) {
-                assert.fail(null, null, "packager was expected to be running");
-            }
+            new Packager(WORKSPACE_PATH, PROJECT_PATH, Packager.DEFAULT_PORT)
+                .isRunning()
+                .then(isRunning => {
+                    assert(isRunning);
+                    assert(
+                        requestStub.firstCall.args[0].match(
+                            "http://localhost:" + Packager.DEFAULT_PORT,
+                        ),
+                    );
+                })
+                .then(done, () => {
+                    assert.fail(null, null, "packager was expected to be running");
+                    done();
+                });
         });
 
-        test("isRunning should report false if server doesn't respond", async function () {
-            requestStub.returns(Promise.reject());
+        test("isRunning should report false if server doesn't respond", function (done) {
+            requestStub.returns(Promise.reject(void 0));
 
-            try {
-                const isRunning = await new Packager(
-                    WORKSPACE_PATH,
-                    PROJECT_PATH,
-                    9091,
-                ).isRunning();
-                assert(!isRunning);
-            } catch (error) {
-                assert.fail(null, null, "packager was not expected to be running");
-            }
+            new Packager(WORKSPACE_PATH, PROJECT_PATH, 9091)
+                .isRunning()
+                .then(isRunning => assert(!isRunning))
+                .then(done, () => {
+                    assert.fail(null, null, "packager was not expected to be running");
+                    done();
+                });
         });
 
-        test("isRunning should report false if request fails", async function () {
+        test("isRunning should report false if request fails", function (done) {
             requestStub.returns(Promise.resolve("some_random_string"));
 
-            try {
-                const isRunning = await new Packager(
-                    WORKSPACE_PATH,
-                    PROJECT_PATH,
-                    10001,
-                ).isRunning();
-                assert(!isRunning);
-            } catch (error) {
-                assert.fail(null, null, "packager was not expected to be running");
-            }
+            new Packager(WORKSPACE_PATH, PROJECT_PATH, 10001)
+                .isRunning()
+                .then(isRunning => assert(!isRunning))
+                .then(done, () => {
+                    assert.fail(null, null, "packager was not expected to be running");
+                    done();
+                });
         });
 
-        test("getPackagerArgs should return correct value (react-native@0.56.0)", async function () {
-            isExpoManagedAppStub.returns(Promise.resolve(false));
+        test("getPackagerArgs should return correct value (react-native@0.56.0)", function (done) {
+            isExpoAppStub.returns(Promise.resolve(false));
             const rnVersion = "0.56.0";
             const expected = ["--port", "10001"];
-
-            const args = await new Packager(WORKSPACE_PATH, PROJECT_PATH, 10001).getPackagerArgs(
-                PROJECT_PATH,
-                rnVersion,
-            );
-            assert.deepEqual(args, expected);
+            new Packager(WORKSPACE_PATH, PROJECT_PATH, 10001)
+                .getPackagerArgs(PROJECT_PATH, rnVersion)
+                .then(args => {
+                    assert.deepEqual(args, expected);
+                    done();
+                })
+                .catch(err => {
+                    done(err);
+                });
         });
 
-        test("getPackagerArgs should return correct value (react-native@0.57.0)", async function () {
-            isExpoManagedAppStub.returns(Promise.resolve(false));
+        test("getPackagerArgs should return correct value (react-native@0.57.0)", function (done) {
+            isExpoAppStub.returns(Promise.resolve(false));
             const rnVersion = "0.57.0";
             const expected = ["--port", "10001", "--resetCache"];
-
-            const args = await new Packager(WORKSPACE_PATH, PROJECT_PATH, 10001).getPackagerArgs(
-                PROJECT_PATH,
-                rnVersion,
-                true,
-            );
-            assert.deepEqual(args, expected);
+            new Packager(WORKSPACE_PATH, PROJECT_PATH, 10001)
+                .getPackagerArgs(PROJECT_PATH, rnVersion, true)
+                .then(args => {
+                    assert.deepEqual(args, expected);
+                    done();
+                })
+                .catch(err => {
+                    done(err);
+                });
         });
 
-        test("getPackagerArgs should return correct value for expo app (react-native@0.56.0)", async function () {
-            isExpoManagedAppStub.returns(Promise.resolve(true));
+        test("getPackagerArgs should return correct value for expo app (react-native@0.56.0)", function (done) {
+            isExpoAppStub.returns(Promise.resolve(true));
             getExpPackagerOptionsStub.returns(Promise.resolve({}));
             const rnVersion = "0.56.0";
             const expected = ["--port", "10001", "--resetCache", "--root", ".vscode"];
-
-            const args = await new Packager(WORKSPACE_PATH, PROJECT_PATH, 10001).getPackagerArgs(
-                PROJECT_PATH,
-                rnVersion,
-                true,
-            );
-            assert.deepEqual(args, expected);
+            new Packager(WORKSPACE_PATH, PROJECT_PATH, 10001)
+                .getPackagerArgs(PROJECT_PATH, rnVersion, true)
+                .then(args => {
+                    assert.deepEqual(args, expected);
+                    done();
+                })
+                .catch(err => {
+                    done(err);
+                });
         });
 
-        test("getPackagerArgs should return correct value for expo app (react-native@0.57.0)", async function () {
-            isExpoManagedAppStub.returns(Promise.resolve(true));
+        test("getPackagerArgs should return correct value for expo app (react-native@0.57.0)", function (done) {
+            isExpoAppStub.returns(Promise.resolve(true));
             getExpPackagerOptionsStub.returns(
                 Promise.resolve({
                     assetExts: ["txt", "md"],
@@ -133,11 +133,15 @@ suite("packager", function () {
             );
             const rnVersion = "0.57.0";
             const expected = ["--port", "10001", "--assetExts", ["txt", "md"]];
-            const args = await new Packager(WORKSPACE_PATH, PROJECT_PATH, 10001).getPackagerArgs(
-                PROJECT_PATH,
-                rnVersion,
-            );
-            assert.deepEqual(args, expected);
+            new Packager(WORKSPACE_PATH, PROJECT_PATH, 10001)
+                .getPackagerArgs(PROJECT_PATH, rnVersion)
+                .then(args => {
+                    assert.deepEqual(args, expected);
+                    done();
+                })
+                .catch(err => {
+                    done(err);
+                });
         });
 
         test("getPackagerArgs should return correct value for expo app with android platform", async function () {

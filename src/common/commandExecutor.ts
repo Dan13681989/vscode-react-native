@@ -3,16 +3,15 @@
 
 import * as path from "path";
 import * as cp from "child_process";
-import * as nls from "vscode-nls";
 import { ILogger } from "../extension/log/LogHelper";
 import { NullLogger } from "../extension/log/NullLogger";
-import { ProjectVersionHelper } from "./projectVersionHelper";
+import { ProjectVersionHelper } from "../common/projectVersionHelper";
 import { ISpawnResult } from "./node/childProcess";
 import { HostPlatform, HostPlatformId } from "./hostPlatform";
 import { ErrorHelper } from "./error/errorHelper";
 import { InternalErrorCode } from "./error/internalErrorCode";
+import * as nls from "vscode-nls";
 import { Node } from "./node/node";
-
 nls.config({
     messageFormat: nls.MessageFormat.bundle,
     bundleFormat: nls.BundleFormat.standalone,
@@ -50,30 +49,19 @@ export class CommandExecutor {
         private logger: ILogger = new NullLogger(),
     ) {}
 
-    public async execute(command: string, options: Options = {}): Promise<void> {
+    public execute(command: string, options: Options = {}): Promise<void> {
         this.logger.debug(CommandExecutor.getCommandStatusString(command, CommandStatus.Start));
-        try {
-            const stdout = await this.childProcess.execToString(command, {
-                cwd: this.currentWorkingDirectory,
-                env: options.env,
-            });
-            this.logger.info(stdout);
-            this.logger.debug(CommandExecutor.getCommandStatusString(command, CommandStatus.End));
-        } catch (reason) {
-            return this.generateRejectionForCommand(command, reason);
-        }
-    }
-
-    public async executeToString(command: string, options: Options = {}): Promise<string> {
-        try {
-            const stdout = await this.childProcess.execToString(command, {
-                cwd: this.currentWorkingDirectory,
-                env: options.env,
-            });
-            return stdout;
-        } catch (reason) {
-            return reason;
-        }
+        return this.childProcess
+            .execToString(command, { cwd: this.currentWorkingDirectory, env: options.env })
+            .then(
+                stdout => {
+                    this.logger.info(stdout);
+                    this.logger.debug(
+                        CommandExecutor.getCommandStatusString(command, CommandStatus.End),
+                    );
+                },
+                (reason: Error) => this.generateRejectionForCommand(command, reason),
+            );
     }
 
     /**
@@ -94,36 +82,34 @@ export class CommandExecutor {
         return this.spawnReactCommand("start", args, options);
     }
 
-    /**
-     * Spawns the React Native packager in a child process.
-     */
-    public spawnExpoPackager(args: string[], options: Options = {}): ISpawnResult {
-        return this.spawnExpoCommand("start", args, options);
-    }
-
-    public async getReactNativeVersion(): Promise<string> {
-        const versions = await ProjectVersionHelper.getReactNativeVersions(
-            this.currentWorkingDirectory,
+    public getReactNativeVersion(): Promise<string> {
+        return ProjectVersionHelper.getReactNativeVersions(this.currentWorkingDirectory).then(
+            versions => versions.reactNativeVersion,
         );
-        return versions.reactNativeVersion;
     }
 
     /**
      * Kills the React Native packager in a child process.
      */
-    public async killReactPackager(packagerProcess?: cp.ChildProcess): Promise<void> {
+    public killReactPackager(packagerProcess?: cp.ChildProcess): Promise<void> {
         if (packagerProcess) {
-            if (HostPlatform.getPlatformId() === HostPlatformId.WINDOWS) {
-                const res = await this.childProcess.exec(
-                    `taskkill /pid ${packagerProcess.pid} /T /F`,
-                );
-                await res.outcome;
-            } else {
-                packagerProcess.kill();
-            }
-            this.logger.info(localize("PackagerStopped", "Packager stopped"));
+            return new Promise(resolve => {
+                if (HostPlatform.getPlatformId() === HostPlatformId.WINDOWS) {
+                    return resolve(
+                        this.childProcess
+                            .exec("taskkill /pid " + packagerProcess.pid + " /T /F")
+                            .then(res => res.outcome),
+                    );
+                } else {
+                    packagerProcess.kill();
+                    return resolve(void 0);
+                }
+            }).then(() => {
+                this.logger.info(localize("PackagerStopped", "Packager stopped"));
+            });
         } else {
             this.logger.warning(localize("PackagerNotFound", "Packager not found"));
+            return Promise.resolve();
         }
     }
 
@@ -140,31 +126,19 @@ export class CommandExecutor {
     }
 
     /**
-     * Executes a react native command and waits for its completion.
-     */
-    public spawnExpoCommand(
-        command: string,
-        args: string[] = [],
-        options: Options = {},
-    ): ISpawnResult {
-        const expoCommand = HostPlatform.getNpmCliCommand(this.selectExpoCLI());
-        return this.spawnChildProcess(expoCommand, [command, ...args], options);
-    }
-
-    /**
      * Spawns a child process with the params passed
      * This method has logic to do while the command is executing
      * {command} - The command to be invoked in the child process
      * {args} - Arguments to be passed to the command
      * {options} - additional options with which the child process needs to be spawned
      */
-    public async spawnWithProgress(
+    public spawnWithProgress(
         command: string,
         args: string[],
         options: Options = { verbosity: CommandVerbosity.OUTPUT },
     ): Promise<void> {
         const spawnOptions = Object.assign({}, { cwd: this.currentWorkingDirectory }, options);
-        const commandWithArgs = `${command} ${args.join(" ")}`;
+        const commandWithArgs = command + " " + args.join(" ");
         const timeBetweenDots = 1500;
         let lastDotTime = 0;
 
@@ -200,17 +174,26 @@ export class CommandExecutor {
             }
         });
 
-        try {
-            await result.outcome;
-            if (options.verbosity === CommandVerbosity.OUTPUT) {
-                this.logger.debug(
-                    CommandExecutor.getCommandStatusString(commandWithArgs, CommandStatus.End),
-                );
-            }
-            this.logger.logStream("\n", process.stdout);
-        } catch (reason) {
-            return this.generateRejectionForCommand(commandWithArgs, reason);
-        }
+        return new Promise((resolve, reject) => {
+            result.outcome = result.outcome.then(
+                () => {
+                    if (options.verbosity === CommandVerbosity.OUTPUT) {
+                        this.logger.debug(
+                            CommandExecutor.getCommandStatusString(
+                                commandWithArgs,
+                                CommandStatus.End,
+                            ),
+                        );
+                    }
+                    this.logger.logStream("\n", process.stdout);
+                    resolve();
+                },
+                reason => {
+                    reject(reason);
+                    return this.generateRejectionForCommand(commandWithArgs, reason);
+                },
+            );
+        });
     }
 
     public selectReactNativeCLI(): string {
@@ -220,22 +203,13 @@ export class CommandExecutor {
         );
     }
 
-    public selectExpoCLI(): string {
-        return (
-            CommandExecutor.ReactNativeCommand ||
-            path.resolve(this.nodeModulesRoot, "node_modules", ".bin", "expo")
-        );
-    }
-
     private spawnChildProcess(
         command: string,
         args: string[],
         options: Options = {},
     ): ISpawnResult {
-        const spawnOptions = Object.assign({}, { cwd: this.currentWorkingDirectory }, options, {
-            shell: true,
-        });
-        const commandWithArgs = `${command} ${args.join(" ")}`;
+        const spawnOptions = Object.assign({}, { cwd: this.currentWorkingDirectory }, options);
+        const commandWithArgs = command + " " + args.join(" ");
 
         this.logger.debug(
             CommandExecutor.getCommandStatusString(commandWithArgs, CommandStatus.Start),

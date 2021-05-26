@@ -49,13 +49,21 @@ export interface IAdbDevice extends IDevice {
 const AndroidSDKEmulatorPattern = /^emulator-\d{1,5}$/;
 
 export class AdbHelper {
-    private childProcess: ChildProcess = new ChildProcess();
-    private commandExecutor: CommandExecutor = new CommandExecutor();
-    private adbExecutable: string = "";
+    private nodeModulesRoot: string;
     private launchActivity: string;
+    private childProcess: ChildProcess = new ChildProcess();
+    private commandExecutor: CommandExecutor;
+    private adbExecutable: string = "";
 
-    constructor(projectRoot: string, logger?: ILogger, launchActivity: string = "MainActivity") {
+    constructor(
+        projectRoot: string,
+        nodeModulesRoot: string,
+        logger?: ILogger,
+        launchActivity: string = "MainActivity",
+    ) {
+        this.nodeModulesRoot = nodeModulesRoot;
         this.adbExecutable = this.getAdbPath(projectRoot, logger);
+        this.commandExecutor = new CommandExecutor(this.nodeModulesRoot);
         this.launchActivity = launchActivity;
     }
 
@@ -80,24 +88,27 @@ export class AdbHelper {
         packageName: string,
         enable: boolean,
         debugTarget?: string,
+        appIdSuffix?: string,
     ): Promise<void> {
         let enableDebugCommand = `${this.adbExecutable} ${
             debugTarget ? "-s " + debugTarget : ""
         } shell am broadcast -a "${packageName}.RELOAD_APP_ACTION" --ez jsproxy ${enable}`;
-        return new CommandExecutor(projectRoot)
+        return new CommandExecutor(this.nodeModulesRoot, projectRoot)
             .execute(enableDebugCommand)
             .then(() => {
                 // We should stop and start application again after RELOAD_APP_ACTION, otherwise app going to hangs up
                 return new Promise(resolve => {
                     setTimeout(() => {
-                        this.stopApp(projectRoot, packageName, debugTarget).then(() => {
-                            return resolve();
-                        });
+                        this.stopApp(projectRoot, packageName, debugTarget, appIdSuffix).then(
+                            () => {
+                                return resolve(void 0);
+                            },
+                        );
                     }, 200); // We need a little delay after broadcast command
                 });
             })
             .then(() => {
-                return this.launchApp(projectRoot, packageName, debugTarget);
+                return this.launchApp(projectRoot, packageName, debugTarget, appIdSuffix);
             });
     }
 
@@ -108,17 +119,25 @@ export class AdbHelper {
         projectRoot: string,
         packageName: string,
         debugTarget?: string,
+        appIdSuffix?: string,
     ): Promise<void> {
         let launchAppCommand = `${this.adbExecutable} ${
             debugTarget ? "-s " + debugTarget : ""
-        } shell am start -n ${packageName}/.${this.launchActivity}`;
+        } shell am start -n ${packageName}${appIdSuffix ? "." + appIdSuffix : ""}/${packageName}.${
+            this.launchActivity
+        }`;
         return new CommandExecutor(projectRoot).execute(launchAppCommand);
     }
 
-    public stopApp(projectRoot: string, packageName: string, debugTarget?: string): Promise<void> {
+    public stopApp(
+        projectRoot: string,
+        packageName: string,
+        debugTarget?: string,
+        appIdSuffix?: string,
+    ): Promise<void> {
         let stopAppCommand = `${this.adbExecutable} ${
             debugTarget ? "-s " + debugTarget : ""
-        } shell am force-stop ${packageName}`;
+        } shell am force-stop ${packageName}${appIdSuffix ? "." + appIdSuffix : ""}`;
         return new CommandExecutor(projectRoot).execute(stopAppCommand);
     }
 

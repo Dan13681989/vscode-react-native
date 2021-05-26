@@ -3,7 +3,7 @@
 
 import * as path from "path";
 import * as fs from "fs";
-import { stripJsonTrailingComma } from "../common/utils";
+import stripJsonComments = require("strip-json-comments");
 
 export interface IConfiguration {
     name: string;
@@ -31,13 +31,13 @@ export class LaunchScenariosManager {
     public readLaunchScenarios(): void {
         if (fs.existsSync(this.pathToLaunchFile)) {
             const content = fs.readFileSync(this.pathToLaunchFile, "utf8");
-            this.launchScenarios = stripJsonTrailingComma(content);
+            this.launchScenarios = JSON.parse(stripJsonComments(content));
         }
     }
 
     public updateLaunchScenario(launchArgs: any, updates: any): void {
         this.readLaunchScenarios();
-        const launchConfigIndex = this.getFirstScenarioIndexByParams(launchArgs);
+        let launchConfigIndex = this.getFirstScenarioIndexByParams(launchArgs);
         const launchScenarios = this.getLaunchScenarios();
         if (launchConfigIndex !== null && launchScenarios.configurations) {
             Object.assign(launchScenarios.configurations[launchConfigIndex], updates);

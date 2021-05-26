@@ -13,22 +13,23 @@ suite("rn-extension", function () {
     suite("createAdditionalWorkspaceFolder", function () {
         test("createAdditionalWorkspaceFolder returns null", function () {
             const folderPath: string = "folderPath";
-            const result: vscode.WorkspaceFolder | null =
-                createAdditionalWorkspaceFolder(folderPath);
+            const result: vscode.WorkspaceFolder | null = createAdditionalWorkspaceFolder(
+                folderPath,
+            );
             assert.strictEqual(result, null);
         });
 
         suite("createAdditionalWorkspaceFolder returns a new workspace folder", function () {
             const fsHelper = new Node.FileSystem();
             const nodeModulesFolderName: string = "node_modules";
-            const sampleReactNativeProjectDir = path.join(
+            const sampleReactNative022ProjectDir = path.join(
                 __dirname,
                 "..",
                 "resources",
-                "sampleReactNativeProject",
+                "sampleReactNative022Project",
             );
             const nodeModulesDir: string = path.join(
-                sampleReactNativeProjectDir,
+                sampleReactNative022ProjectDir,
                 nodeModulesFolderName,
             );
 
@@ -38,15 +39,16 @@ suite("rn-extension", function () {
 
             suiteTeardown(() => {
                 fsHelper.removePathRecursivelySync(
-                    path.join(sampleReactNativeProjectDir, nodeModulesFolderName),
+                    path.join(sampleReactNative022ProjectDir, nodeModulesFolderName),
                 );
             });
 
             test("createAdditionalWorkspaceFolder should create a worspace folder, return the created folder with index increaed by 1", function () {
                 const currentCountOfWorkspaceFolders: number = getCountOfWorkspaceFolders();
 
-                const result: vscode.WorkspaceFolder | null =
-                    createAdditionalWorkspaceFolder(nodeModulesDir);
+                const result: vscode.WorkspaceFolder | null = createAdditionalWorkspaceFolder(
+                    nodeModulesDir,
+                );
 
                 const expectedURI = vscode.Uri.file(nodeModulesDir);
                 const expectedIndex: number = currentCountOfWorkspaceFolders + 1;
@@ -65,7 +67,7 @@ suite("rn-extension", function () {
 
                 const innerProjectName: string = "innerSampleProject";
                 const innerProjectDir: string = path.join(
-                    sampleReactNativeProjectDir,
+                    sampleReactNative022ProjectDir,
                     innerProjectName,
                 );
                 const innerNodeModulesDir: string = path.join(
@@ -81,8 +83,9 @@ suite("rn-extension", function () {
 
                 createAdditionalWorkspaceFolder(nodeModulesDir);
 
-                const result: vscode.WorkspaceFolder | null =
-                    createAdditionalWorkspaceFolder(innerNodeModulesDir);
+                const result: vscode.WorkspaceFolder | null = createAdditionalWorkspaceFolder(
+                    innerNodeModulesDir,
+                );
 
                 const expectedURI = vscode.Uri.file(innerNodeModulesDir);
                 const expectedIndex: number = currentCountOfWorkspaceFolders + 2;
