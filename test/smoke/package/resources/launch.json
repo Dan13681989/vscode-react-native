@@ -17,7 +17,7 @@
       "platform": "windows"
     },
     {
-      "name": "Debug Windows Hermes - Experimental",
+      "name": "Debug RN Wind Hermes - Experimental",
       "cwd": "${workspaceFolder}",
       "type": "reactnativedirect",
       "request": "launch",
