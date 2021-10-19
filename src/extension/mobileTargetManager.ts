@@ -5,7 +5,6 @@ import * as nls from "vscode-nls";
 import { QuickPickOptions, window } from "vscode";
 import { IMobileTarget, MobileTarget } from "./mobileTarget";
 import { TargetType } from "./generalPlatform";
-
 nls.config({
     messageFormat: nls.MessageFormat.bundle,
     bundleFormat: nls.BundleFormat.standalone,

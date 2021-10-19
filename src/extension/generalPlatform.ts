@@ -2,13 +2,12 @@
 // Licensed under the MIT license. See LICENSE file in the project root for details.
 
 import * as fs from "fs";
-import * as nls from "vscode-nls";
-import { Packager } from "../common/packager";
 import { IRunOptions } from "./launchArgs";
+import { Packager } from "../common/packager";
 import { PackagerStatusIndicator, PackagerStatus } from "./packagerStatusIndicator";
 import { SettingsHelper } from "./settingsHelper";
 import { OutputChannelLogger } from "./log/OutputChannelLogger";
-import { RNProjectObserver } from "./rnProjectObserver";
+import * as nls from "vscode-nls";
 
 nls.config({
     messageFormat: nls.MessageFormat.bundle,
@@ -17,7 +16,6 @@ nls.config({
 const localize = nls.loadMessageBundle();
 
 export interface MobilePlatformDeps {
-    projectObserver?: RNProjectObserver;
     packager?: Packager;
 }
 
@@ -31,7 +29,6 @@ export class GeneralPlatform {
     protected platformName: string;
     protected packager: Packager;
     protected logger: OutputChannelLogger;
-    protected projectObserver?: RNProjectObserver;
 
     protected static NO_PACKAGER_VERSION = "0.42.0";
 
@@ -48,7 +45,6 @@ export class GeneralPlatform {
                 SettingsHelper.getPackagerPort(this.runOptions.workspaceRoot),
                 new PackagerStatusIndicator(this.projectPath),
             );
-        this.projectObserver = platformDeps.projectObserver;
         this.packager.setRunOptions(runOptions);
         this.logger = OutputChannelLogger.getChannel(
             localize("ReactNativeRunPlatform", "React Native: Run {0}", this.platformName),
@@ -159,18 +155,23 @@ export class GeneralPlatform {
     ): any {
         if (runArguments.length > 0) {
             const optIdx = runArguments.indexOf(optName);
-            let result: any;
+            let result: any = undefined;
 
             if (optIdx > -1) {
                 result = binary ? true : runArguments[optIdx + 1];
             } else {
-                for (const arg of runArguments) {
-                    if (arg.includes(optName)) {
+                for (let i = 0; i < runArguments.length; i++) {
+                    const arg = runArguments[i];
+                    if (arg.indexOf(optName) > -1) {
                         if (binary) {
                             result = true;
                         } else {
                             const tokens = arg.split("=");
-                            result = tokens.length > 1 ? tokens[1].trim() : undefined;
+                            if (tokens.length > 1) {
+                                result = tokens[1].trim();
+                            } else {
+                                result = undefined;
+                            }
                         }
                     }
                 }
@@ -178,7 +179,11 @@ export class GeneralPlatform {
 
             // Binary parameters can either exists (e.g. be true) or be absent. You can not pass false binary parameter.
             if (binary) {
-                return result === undefined ? undefined : true;
+                if (result === undefined) {
+                    return undefined;
+                } else {
+                    return true;
+                }
             }
 
             if (result) {
@@ -199,24 +204,13 @@ export class GeneralPlatform {
     }
 
     public static getEnvArgument(processEnv: any, env?: any, envFile?: string): any {
-        let newVersion = SettingsHelper.getSettingNodeVersion();
-        let nodeEnv;
-        if (newVersion) {
-            newVersion = newVersion.includes("v") ? newVersion : `v${newVersion}`;
-            const regex = /versions\/node\/v?\d+\.\d+\.\d+/g;
-            nodeEnv = {
-                NVM_BIN: processEnv.NVM_BIN?.replace(regex, `versions/node/${newVersion}`),
-                NVM_INC: processEnv.NVM_INC?.replace(regex, `versions/node/${newVersion}`),
-                PATH: processEnv.PATH?.replace(regex, `versions/node/${newVersion}`),
-            };
-        }
-        const modifyEnv = Object.assign({}, processEnv, nodeEnv);
+        let modifyEnv = Object.assign({}, processEnv);
+
         if (envFile) {
             // .env variables never overwrite existing variables
             const argsFromEnvFile = this.readEnvFile(envFile);
             if (argsFromEnvFile != null) {
-                // eslint-disable-next-line no-restricted-syntax
-                for (const key in argsFromEnvFile) {
+                for (let key in argsFromEnvFile) {
                     if (!modifyEnv[key] && argsFromEnvFile.hasOwnProperty(key)) {
                         modifyEnv[key] = argsFromEnvFile[key];
                     }
@@ -226,8 +220,7 @@ export class GeneralPlatform {
 
         if (env) {
             // launch config env vars overwrite .env vars
-            // eslint-disable-next-line no-restricted-syntax
-            for (const key in env) {
+            for (let key in env) {
                 if (env.hasOwnProperty(key)) {
                     modifyEnv[key] = env[key];
                 }
@@ -239,7 +232,7 @@ export class GeneralPlatform {
     private static readEnvFile(filePath: string): any {
         if (fs.existsSync(filePath)) {
             let buffer = fs.readFileSync(filePath, "utf8");
-            const result = {};
+            let result = {};
 
             // Strip BOM
             if (buffer && buffer[0] === "\uFEFF") {
@@ -247,7 +240,7 @@ export class GeneralPlatform {
             }
 
             buffer.split("\n").forEach((line: string) => {
-                const r = line.match(/^\s*([\w.\-]+)\s*=\s*(.*)?\s*$/);
+                const r = line.match(/^\s*([\w\.\-]+)\s*=\s*(.*)?\s*$/);
                 if (r !== null) {
                     const key = r[1];
                     let value = r[2] || "";
@@ -258,12 +251,13 @@ export class GeneralPlatform {
                     ) {
                         value = value.replace(/\\n/gm, "\n");
                     }
-                    result[key] = value.replace(/(^["']|["']$)/g, "");
+                    result[key] = value.replace(/(^['"]|['"]$)/g, "");
                 }
             });
 
             return result;
+        } else {
+            return null;
         }
-        return null;
     }
 }
