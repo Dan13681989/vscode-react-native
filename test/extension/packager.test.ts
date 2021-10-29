@@ -14,7 +14,7 @@ import * as sinon from "sinon";
 suite("packager", function () {
     suite("extensionContext", function () {
         let requestStub: Sinon.SinonStub;
-        let isExpoAppStub: Sinon.SinonStub;
+        let isExpoManagedAppStub: Sinon.SinonStub;
         let getExpPackagerOptionsStub: Sinon.SinonStub;
 
         const WORKSPACE_PATH: string = "/workspace";
@@ -22,7 +22,7 @@ suite("packager", function () {
 
         setup(() => {
             requestStub = sinon.stub(Request, "request");
-            isExpoAppStub = sinon.stub(ExponentHelper.prototype, "isExpoApp");
+            isExpoManagedAppStub = sinon.stub(ExponentHelper.prototype, "isExpoManagedApp");
             getExpPackagerOptionsStub = sinon.stub(
                 ExponentHelper.prototype,
                 "getExpPackagerOptions",
@@ -31,7 +31,7 @@ suite("packager", function () {
 
         teardown(() => {
             requestStub.restore();
-            isExpoAppStub.restore();
+            isExpoManagedAppStub.restore();
             getExpPackagerOptionsStub.restore();
         });
 
@@ -86,7 +86,7 @@ suite("packager", function () {
         });
 
         test("getPackagerArgs should return correct value (react-native@0.56.0)", async function () {
-            isExpoAppStub.returns(Promise.resolve(false));
+            isExpoManagedAppStub.returns(Promise.resolve(false));
             const rnVersion = "0.56.0";
             const expected = ["--port", "10001"];
 
@@ -98,7 +98,7 @@ suite("packager", function () {
         });
 
         test("getPackagerArgs should return correct value (react-native@0.57.0)", async function () {
-            isExpoAppStub.returns(Promise.resolve(false));
+            isExpoManagedAppStub.returns(Promise.resolve(false));
             const rnVersion = "0.57.0";
             const expected = ["--port", "10001", "--resetCache"];
 
@@ -111,7 +111,7 @@ suite("packager", function () {
         });
 
         test("getPackagerArgs should return correct value for expo app (react-native@0.56.0)", async function () {
-            isExpoAppStub.returns(Promise.resolve(true));
+            isExpoManagedAppStub.returns(Promise.resolve(true));
             getExpPackagerOptionsStub.returns(Promise.resolve({}));
             const rnVersion = "0.56.0";
             const expected = ["--port", "10001", "--resetCache", "--root", ".vscode"];
@@ -125,7 +125,7 @@ suite("packager", function () {
         });
 
         test("getPackagerArgs should return correct value for expo app (react-native@0.57.0)", async function () {
-            isExpoAppStub.returns(Promise.resolve(true));
+            isExpoManagedAppStub.returns(Promise.resolve(true));
             getExpPackagerOptionsStub.returns(
                 Promise.resolve({
                     assetExts: ["txt", "md"],
