@@ -160,9 +160,8 @@ suite("packageLoader", async () => {
                 "Package was preinstalled with wrong version",
             );
 
-            const getRimraf = PackageLoader.getInstance().generateGetPackageFunction<any>(
-                rimrafPackageFirst,
-            );
+            const getRimraf =
+                PackageLoader.getInstance().generateGetPackageFunction<any>(rimrafPackageFirst);
             assert.strictEqual(
                 isNotEmptyPackage(await getRimraf()),
                 true,
@@ -194,9 +193,8 @@ suite("packageLoader", async () => {
                 "Package was preinstalled with wrong version",
             );
 
-            const getRimraf = PackageLoader.getInstance().generateGetPackageFunction<any>(
-                rimrafPackageSecond,
-            );
+            const getRimraf =
+                PackageLoader.getInstance().generateGetPackageFunction<any>(rimrafPackageSecond);
             assert.strictEqual(
                 isNotEmptyPackage(await getRimraf()),
                 true,
@@ -224,9 +222,8 @@ suite("packageLoader", async () => {
         test("The package loader should install package and require specific subpath for this package", async function () {
             this.timeout(packageLoaderTestTimeout);
 
-            const getChalk = PackageLoader.getInstance().generateGetPackageFunction<any>(
-                chalkPackageConfig,
-            );
+            const getChalk =
+                PackageLoader.getInstance().generateGetPackageFunction<any>(chalkPackageConfig);
             const chalkPackage = await getChalk();
             assert.strictEqual(isNotEmptyPackage(chalkPackage), true, "Package was not required");
             assert.strictEqual(
