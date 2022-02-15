@@ -49,7 +49,7 @@ export class Packager {
     private static OPN_PACKAGE_MAIN_FILENAME = "index.js";
     private static fs: FileSystem = new Node.FileSystem();
     private expoHelper: ExponentHelper;
-    private runOptions: IRunOptions;
+    private runOptions?: IRunOptions;
 
     constructor(private workspacePath: string, private projectPath: string, private packagerPort?: number, packagerStatusIndicator?: PackagerStatusIndicator) {
         this.packagerStatus = PackagerStatus.PACKAGER_STOPPED;
