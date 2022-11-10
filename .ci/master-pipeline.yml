@@ -1,6 +1,9 @@
 trigger:
   - legacy
 
+variables:
+  Codeql.Enabled: true
+
 pr:
   - none
 
