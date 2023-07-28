@@ -5,16 +5,15 @@ import * as URL from "url";
 import * as http from "http";
 import * as https from "https";
 import { promises as dns } from "dns";
+import * as ipModule from "ip";
 import { CancellationToken } from "vscode";
 import { InternalErrorCode } from "../common/error/internalErrorCode";
 import { ErrorHelper } from "../common/error/errorHelper";
 import { PromiseUtil } from "../common/node/promise";
-import { ipToBuffer } from "../common/utils";
 
 interface DebuggableEndpointData {
     webSocketDebuggerUrl: string;
     title: string;
-    description: string;
 }
 
 export class DebuggerEndpointHelper {
@@ -22,8 +21,8 @@ export class DebuggerEndpointHelper {
     private localv6: Buffer;
 
     constructor() {
-        this.localv4 = ipToBuffer("127.0.0.1");
-        this.localv6 = ipToBuffer("::1");
+        this.localv4 = ipModule.toBuffer("127.0.0.1");
+        this.localv6 = ipModule.toBuffer("::1");
     }
 
     /**
@@ -105,22 +104,6 @@ export class DebuggerEndpointHelper {
             return isHermes
                 ? this.tryToGetHermesImprovedChromeReloadsWebSocketDebuggerUrl(defaultJsonList)
                 : defaultJsonList[0].webSocketDebuggerUrl;
-        }
-
-        throw new Error("Could not find any debuggable target");
-    }
-
-    /**
-     * Returns the debugger type for expo app and react-native pure app.
-     * @param browserURL -- Address like `http://localhost:1234`
-     */
-    public async getDebuggerTpye(browserURL: string): Promise<string> {
-        const jsonList = await this.fetchJson<DebuggableEndpointData[]>(
-            URL.resolve(browserURL, "/json/list"),
-        );
-        if (jsonList.length) {
-            const type = jsonList[0].description.toLowerCase();
-            return type.includes("exponent") ? "expo" : "react-native";
         }
 
         throw new Error("Could not find any debuggable target");
@@ -216,7 +199,7 @@ export class DebuggerEndpointHelper {
 
         let buf: Buffer;
         try {
-            buf = ipToBuffer(ipOrLocalhost);
+            buf = ipModule.toBuffer(ipOrLocalhost);
         } catch {
             return false;
         }
