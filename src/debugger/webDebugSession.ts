@@ -4,7 +4,7 @@
 import * as path from "path";
 import * as fs from "fs";
 import * as vscode from "vscode";
-import { logger } from "@vscode/debugadapter";
+import { logger } from "vscode-debugadapter";
 import { DebugProtocol } from "vscode-debugprotocol";
 import * as nls from "vscode-nls";
 import { TelemetryHelper } from "../common/telemetryHelper";
@@ -14,7 +14,8 @@ import { InternalErrorCode } from "../common/error/internalErrorCode";
 import { ReactNativeCDPProxy } from "../cdp-proxy/reactNativeCDPProxy";
 import { Request } from "../common/node/request";
 import { PromiseUtil } from "../common/node/promise";
-import { ReactNativeProjectHelper } from "../common/reactNativeProjectHelper";
+import { FileSystem } from "../common/node/fileSystem";
+import { stripJsonTrailingComma } from "../common/utils";
 import { MultipleLifetimesAppWorker } from "./appWorker";
 import {
     DebugSessionBase,
@@ -224,8 +225,17 @@ export class WebDebugSession extends DebugSessionBase {
         const sdkVersion = await exponentHelper.exponentSdk(true);
         if (parseInt(sdkVersion.substring(0, 2)) >= 49) {
             // If Expo SDK >= 49, add web metro bundler in app.json for expo web debugging
-            logger.log("Check and add metro bundler field to app.json.");
-            await ReactNativeProjectHelper.UpdateMertoBundlerForExpoWeb(launchArgs);
+            const appJsonPath = path.join(launchArgs.cwd, "app.json");
+            const fs = new FileSystem();
+            const appJson = await fs.readFile(appJsonPath).then(content => {
+                return stripJsonTrailingComma(content.toString());
+            });
+
+            if (!appJson.expo.web.bundler) {
+                logger.log("Add metro bundler field to app.json.");
+                appJson.expo.web.bundler = "metro";
+                await fs.writeFile(appJsonPath, JSON.stringify(appJson, null, 2));
+            }
         } else {
             // If Expo SDK < 49, using @expo/webpack-config for expo web debugging
             const nodeModulePath = path.join(launchArgs.cwd, "node_modules");
