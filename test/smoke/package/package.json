@@ -35,6 +35,7 @@
     "portastic": "^1.0.1",
     "request": "^2.88.0",
     "rimraf": "^2.6.1",
+    "tar": "4.4.18",
     "tree-kill": "^1.2.2",
     "typescript": "^3.7.5",
     "url-parse": "^1.4.3",
