@@ -2,6 +2,7 @@
 node_modules/
 .vscode-test/
 coverage/
+.nyc_output/
 .idea
 out
 src/**/nodeDebugLocation.json
@@ -14,6 +15,7 @@ src/**/*.js
 dist/**
 !src/extension/appcenter/lib/**/*.js
 test/**/*.js
+!test/resources/sampleReactNativeProject/metro.config.js
 !test/**/.eslintrc.js
 test/smoke/vscode
 !gulpfile.js
@@ -21,6 +23,8 @@ SmokeTestLogs
 VSCodeUserData
 **/*.js.map
 vscode-react-native-*.vsix
+vscode-react-native-*.vsix.zip
+*-report
 
 # Sample Application auto-generated files
 SampleApplication/.vscode/.react/debuggerWorker.js
