@@ -51,4 +51,5 @@ extends:
                   scriptType: "pscore"
                   scriptLocation: 'inlineScript'
                   inlineScript: |
-                    vsce publish --azure-credential
+                    VSIX=`ls *.vsix`
+                    vsce publish --azure-credential --package $VSIX
