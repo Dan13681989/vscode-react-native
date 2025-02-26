@@ -517,7 +517,6 @@ export class AppLauncher {
                 this.browserProc = child_process.spawn(browserPath.path, runArguments, {
                     detached: true,
                     stdio: ["ignore"],
-                    shell: true,
                 });
                 this.browserProc.unref();
                 this.browserProc.on("error", err => {
