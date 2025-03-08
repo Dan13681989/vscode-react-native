@@ -36,6 +36,18 @@ export const REACT_NATIVE_PACKAGES: Record<string, ParsedPackage> = {
     },
 };
 
+export function RNPackageVersionsToPackageVersion(
+    packageVersions: RNPackageVersions,
+): PackageVersion[] {
+    const res: PackageVersion[] = [];
+    Object.keys(packageVersions).forEach(key => {
+        const item: PackageVersion = {};
+        item[key] = packageVersions[key];
+        res.push(item);
+    });
+    return res;
+}
+
 export class ProjectVersionHelper {
     private static SEMVER_INVALID = "SemverInvalid";
 
@@ -220,6 +232,12 @@ export class ProjectVersionHelper {
 
     public static isVersionError(version: string): boolean {
         return version.toLowerCase().includes("error");
+    }
+
+    // We should work with daily canary builds of react-native since those are also newer than 0.19,
+    // and allow earlier testing of the extension on newer builds of react-native
+    public static isCanaryVersion(version: string): boolean {
+        return semver.major(version) === 0 && semver.minor(version) === 0;
     }
 
     public static processVersion(version: string, useSemverCoerce: boolean = true): string {

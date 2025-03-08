@@ -16,15 +16,6 @@ export function getExtensionName(): string | null {
     return packageJsonPath ? JSON.parse(fs.readFileSync(packageJsonPath, "utf-8")).name : null;
 }
 
-export function getExtensionName(): string | null {
-    const packageJsonPath = findFileInFolderHierarchy(__dirname, "package.json");
-    if (packageJsonPath) {
-        return JSON.parse(fs.readFileSync(packageJsonPath, "utf-8")).name;
-    } else {
-        return null;
-    }
-}
-
 export function findFileInFolderHierarchy(dir: string, filename: string): string | null {
     let parentPath: string;
     let projectRoot: string = dir;
@@ -80,8 +71,4 @@ export async function getVersionFromExtensionNodeModules(
         }
     }
     return null;
-}
-
-export function generateRandomPortNumber() {
-    return Math.round(Math.random() * 40000 + 3000);
 }

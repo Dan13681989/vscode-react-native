@@ -1,3 +1,150 @@
+## 1.13.1
+* Add command for expo prebuild directories clean up [#2124](https://github.com/microsoft/vscode-react-native/pull/2124)
+* Integrate expo prebuild to generate react-native app for android and ios platform [#2128](https://github.com/microsoft/vscode-react-native/pull/2128)
+* Add telemetry toggle in vscode settings [#2131](https://github.com/microsoft/vscode-react-native/pull/2131)
+* Add command to reopen QR code in webview for expo application [#2137](https://github.com/microsoft/vscode-react-native/pull/2137)
+* Change path for findXcodeProject for iOS since RN 0.74.0 [#2140](https://github.com/microsoft/vscode-react-native/pull/2140)
+* Change react native output regular expression to match success pattern [#2141](https://github.com/microsoft/vscode-react-native/pull/2141)
+* Add optional argument in settings.json to hide indicator [#2157](https://github.com/microsoft/vscode-react-native/pull/2157)
+* Internal changes:
+    * Bump follow-redirects from 1.15.5 to 1.15.6 [#2123](https://github.com/microsoft/vscode-react-native/pull/2123)
+    * Bump webpack-dev-middleware from 5.3.3 to 5.3.4 [#2127](https://github.com/microsoft/vscode-react-native/pull/2127)
+    * Bump minimatch from 3.0.4 to 3.1.2 [#2130](https://github.com/microsoft/vscode-react-native/pull/2130)
+    * Bump tar from 4.4.18 to 6.2.1 [#2132](https://github.com/microsoft/vscode-react-native/pull/2132)
+    * Add unit test for metro config verification [#2134](https://github.com/microsoft/vscode-react-native/pull/2134)
+    * Resolve CodeQL analysis alert: reg only replace its first occurence [#2148](https://github.com/microsoft/vscode-react-native/pull/2148)
+    * Resolve CodeQL analysis alert: cross-site scripting vulnerability [#2152](https://github.com/microsoft/vscode-react-native/pull/2152)
+    * Migrate pipeline to 1ES pipeline template - master pipeline [#2162](https://github.com/microsoft/vscode-react-native/pull/2162)
+    * Bump braces and gulp [#2163](https://github.com/microsoft/vscode-react-native/pull/2163)
+    * Migrate pipeline to 1ES pipeline tempalte - nightly pipeline [#2165](https://github.com/microsoft/vscode-react-native/pull/2165)
+    * Bump braces from 3.0.2 to 3.0.3 [#2166](https://github.com/microsoft/vscode-react-native/pull/2166)
+    * Bump ws from 7.4.6 to 7.5.10 [#2167](https://github.com/microsoft/vscode-react-native/pull/2167)
+
+## 1.13.0
+* Support react-native and expo doctor in command palette [#2116](https://github.com/microsoft/vscode-react-native/pull/2116)
+* Skip extra commas for getting workspace settings [#2113](https://github.com/microsoft/vscode-react-native/pull/2113)
+* Support .cjs metro config file [#2103](hhttps://github.com/microsoft/vscode-react-native/pull/2103)
+* Remove all Experimental tags for Hermes debugging [#2094](https://github.com/microsoft/vscode-react-native/issues/2094)
+* Support default breakpoints filters for exceptions [#2097](https://github.com/microsoft/vscode-react-native/pull/2097)
+* Update package and software version for each doc [#2093](https://github.com/microsoft/vscode-react-native/pull/2093)
+* Internal changes:
+    * Fix security vulnerabilities
+    * Bump ip from 1.1.5 to 1.1.9 [#2112](https://github.com/microsoft/vscode-react-native/pull/2112)
+    * Bump JSON5 1.0.1 to 1.0.2, 2.x.x to 2.2.2 [#2106](https://github.com/microsoft/vscode-react-native/pull/2106)
+    * Bump follow-redirects from 1.15.2 to 1.15.4 [#2095](https://github.com/microsoft/vscode-react-native/pull/2095)
+    * Verify node version when start RN packager [#2099](https://github.com/microsoft/vscode-react-native/pull/2099)
+    * Improve metro config verification logic [#2100](https://github.com/microsoft/vscode-react-native/pull/2100)
+
+## 1.12.3
+* Handle settings file for unsaved workspace [#2077](https://github.com/microsoft/vscode-react-native/pull/2077)
+* Documentation: debugging in vscode workspace [#2075](https://github.com/microsoft/vscode-react-native/pull/2075)
+* Add command for launching Expo web application [#2073](https://github.com/microsoft/vscode-react-native/pull/2073)
+* Handle comment line in workspace settings file [#2071](https://github.com/microsoft/vscode-react-native/pull/2071)
+* Add command to download ExpoGo and install in simulator [#2064](https://github.com/microsoft/vscode-react-native/pull/2064)
+* Internal changes:
+    * Bump @babel/traverse from 7.14.2 to 7.23.2 [#2059](https://github.com/microsoft/vscode-react-native/pull/2059)
+    * Fix gulp script failure on node18 [#2079](https://github.com/microsoft/vscode-react-native/pull/2079)
+    * Bump vscode-test to 2.3.8 [#2083](https://github.com/microsoft/vscode-react-native/pull/2083)
+    * Add unit test for workspace settings file with comment line [#2081](https://github.com/microsoft/vscode-react-native/pull/2081)
+    * Bump eslint package to support typescript new version [#2088](https://github.com/microsoft/vscode-react-native/pull/2088)
+
+## 1.12.2
+* Fix react-native application crashing issue related to cdp event  [#2055](https://github.com/microsoft/vscode-react-native/pull/2055)
+* Add workspace setting to ignore specific project folder in multi-root workspace [#2061](https://github.com/microsoft/vscode-react-native/pull/2061)
+* Internal changes:
+    * Bump postcss from 8.4.26 to 8.4.31 in /test/smoke/package [#2053](https://github.com/microsoft/vscode-react-native/pull/2053)
+    * Update vscode-debugadapter to @vscode/debugadapter [#2057](https://github.com/microsoft/vscode-react-native/pull/2057)
+    * Bump @babel/traverse from 7.22.8 to 7.23.2 in /test/smoke/package [#2060](https://github.com/microsoft/vscode-react-native/pull/2060)
+    * Add unit test for getting workspace settings [#2062](https://github.com/microsoft/vscode-react-native/pull/2062)
+
+## 1.12.1
+* Ignore merto config verification for expo application [#2040](https://github.com/microsoft/vscode-react-native/pull/2040)
+* Add documentation for Android applicationIdSuffix customization and fix format [#2044](https://github.com/microsoft/vscode-react-native/pull/2044)
+* Fix app launcher create issue in subfolder project [#2048](https://github.com/microsoft/vscode-react-native/pull/2048)
+* Internal changes:
+    * Resolve CodeQL analysis alert: Do not use eval or the Function constructor [#2034](https://github.com/microsoft/vscode-react-native/pull/2034)
+    * Add unit test for CLI generation [#2036](https://github.com/microsoft/vscode-react-native/pull/2036)
+
+## 1.12.0
+* Support Expo web debugging [#1997](https://github.com/microsoft/vscode-react-native/pull/1997)
+* Add Expo web debugging documentation [#2019](https://github.com/microsoft/vscode-react-native/pull/2019)
+* Add metro bundler field in app.json for expo web debugging [#2021](https://github.com/microsoft/vscode-react-native/pull/2021)
+* Verify metro.config.js when start debugging [#2023](https://github.com/microsoft/vscode-react-native/pull/2023)
+* Internal changes:
+    * Fix security vulnerabilities [#2015](https://github.com/microsoft/vscode-react-native/pull/2015)
+    * Disable mocha spec reporter for unit test [#2017](https://github.com/microsoft/vscode-react-native/pull/2017)
+    * Add unit test for expo web metro bundler setup [#2025](https://github.com/microsoft/vscode-react-native/pull/2025)
+
+## 1.11.2
+* Fix attach request for different metro ports [#2007](https://github.com/microsoft/vscode-react-native/pull/2007)
+* Fix unexpected internal error [#2005](https://github.com/microsoft/vscode-react-native/pull/2005)
+* Fix getting android sdk path logic in local.properties file [#1991](https://github.com/microsoft/vscode-react-native/pull/1991)
+* Replace RN CLI by Expo CLI to start Metro in Expo debugging [#1987](https://github.com/microsoft/vscode-react-native/pull/1987)
+* Fix show qrcode in output window function [#1985](https://github.com/microsoft/vscode-react-native/pull/1985)
+* Internal changes:
+    * Fix security vulnerabilities [#1994](https://github.com/microsoft/vscode-react-native/pull/1994)
+
+## 1.11.1
+* Support Expo EAS command: open the project page in a web browser [#1959](https://github.com/microsoft/vscode-react-native/pull/1959)
+* Update vscode marketpace badge service [#1967](https://github.com/microsoft/vscode-react-native/pull/1967)
+* Add command to quickly revert open module update [#1961](https://github.com/microsoft/vscode-react-native/pull/1961)
+* Add argument to collect js-debug native verbose log [#1971](https://github.com/microsoft/vscode-react-native/pull/1971)
+* Integrate react-native upgrade-helper [#1973](https://github.com/microsoft/vscode-react-native/pull/1973)
+* Update documentation: debug out of project directory [#1980](https://github.com/microsoft/vscode-react-native/pull/1980)
+* Internal changes:
+    * Fix security vulnerabilities
+    * Adding Microsoft SECURITY.MD [#1963](https://github.com/microsoft/vscode-react-native/pull/1963)
+    * Check updates for all package modules in extension [#1951](https://github.com/microsoft/vscode-react-native/pull/1951)
+    * Update typescript version to 5.0.4 and update related settings [#1956](https://github.com/microsoft/vscode-react-native/pull/1956)
+
+## 1.11.0
+* Support Hermes debugging for Expo SDK 48 [#1921](https://github.com/microsoft/vscode-react-native/pull/1921)
+* Update documentation for Expo SDK 48 [#1929](https://github.com/microsoft/vscode-react-native/pull/1929)
+* Remove 'Experimental' tag for iOS& Android Hermes debugger [#1935](https://github.com/microsoft/vscode-react-native/pull/1935)
+* Add Hermes Expo debugger in debug-alt menu [#1942](https://github.com/microsoft/vscode-react-native/pull/1942)
+* Add support for EAS build setup command [#1947](https://github.com/microsoft/vscode-react-native/pull/1947)
+* Internal changes:
+    * Update pipeline tasks - Component Detection& NOTICE File Generator [#1925](https://github.com/microsoft/vscode-react-native/pull/1925)
+    * Run locale testing on vscode latest stable version [#1938](https://github.com/microsoft/vscode-react-native/pull/1938)
+    * Cleanup and update 3rd party notices file [#1939](https://github.com/microsoft/vscode-react-native/pull/1939)
+
+## 1.10.2
+* Improve android sdk and adb.exe path reading logic [#1877](https://github.com/microsoft/vscode-react-native/pull/1877)
+* Update vscode marketplace badge [#1893](https://github.com/microsoft/vscode-react-native/pull/1893)
+* Add notification for local file changes [#1896](https://github.com/microsoft/vscode-react-native/pull/1896)
+* Fix deprecated new Buffer() to Buffer.from [#1905](https://github.com/microsoft/vscode-react-native/pull/1905)
+* Internal changes:
+    * Add unit test for getting adb path logic [#1889](https://github.com/microsoft/vscode-react-native/pull/1889)
+    * Update VSCE module from vsce to @vscode/vsce [#1897](https://github.com/microsoft/vscode-react-native/pull/1897)
+    * Update module vscode-test to @vscode/test-electron, fix node ECONNRESET error in MacOS [#1908](https://github.com/microsoft/vscode-react-native/pull/1908)
+
+## 1.10.1
+* Improve expo package.json file checking logic for some previous expo versions [#1870](https://github.com/microsoft/vscode-react-native/issues/1870)
+* Improve expo debugging output log user experience [#1874](https://github.com/microsoft/vscode-react-native/issues/1874)
+* Fix bug: i.Parse() is not a function when add target:"simulator" in launch.json [#1856](https://github.com/microsoft/vscode-react-native/issues/1856)
+* Avoid extension overwrite app.json in expo application [#1849](https://github.com/microsoft/vscode-react-native/pull/1849)
+* Temporarily disable some parts of log hightlight for tm-grammar refactor [#1872](https://github.com/microsoft/vscode-react-native/pull/1872)
+* Internal changes:
+    * Fix Json5 version issue in package dependencies [#1851](https://github.com/microsoft/vscode-react-native/pull/1851)
+    * Remove unused file from webpack [#1860](https://github.com/microsoft/vscode-react-native/pull/1860)
+    * Enable CodeQL for ADO pipeline [#1863](https://github.com/microsoft/vscode-react-native/pull/1863)
+    * Fix CodeQL issue: Disabling certificate validation is strongly discouraged [#1864](https://github.com/microsoft/vscode-react-native/issues/1864)
+    * Fix CodeQL issue: This replaces only the first occurrence of "../" [#1865](https://github.com/microsoft/vscode-react-native/issues/1865)
+
+## 1.10.0
+* Update documentation for Hermes and Expo Hermes [#1827](https://github.com/microsoft/vscode-react-native/commit/9498893a1eb44e5d4af51251d25afe3d7be1295a)
+* Improve react-native packager output log and error message [#1811](https://github.com/microsoft/vscode-react-native/commit/4b9b406bce36747a151614c6537573a8e66e50aa)
+* Fix iOS debugger findXcodeProject function location [#1784](https://github.com/microsoft/vscode-react-native/commit/8f9463c248692a78f1bb8e19007977776064d6c1)
+* Add Expo QR code to output window  [#1786](https://github.com/microsoft/vscode-react-native/commit/b29085d1bbdd5ebf7d54348f54d94c4af4a42a9d)
+* Improve json file reading logic [#1422](https://github.com/microsoft/vscode-react-native/pull/1422)
+* Improve logging experience and add log color customize config [#1385](https://github.com/microsoft/vscode-react-native/pull/1385)
+* Internal changes:
+    * Switch husky hook from pre-push to pre-commit [#1841](https://github.com/microsoft/vscode-react-native/pull/1841)
+    * Simplify and group existing task in gulpfile.js [#1828](https://github.com/microsoft/vscode-react-native/pull/1828)
+    * Replace tasks in gulpfile.js with exports [#1815](https://github.com/microsoft/vscode-react-native/pull/1815)
+    * Unit test and localization test improvement [#1821](https://github.com/microsoft/vscode-react-native/pull/1821)
+    * Improve mocha test report [#1790](https://github.com/microsoft/vscode-react-native/pull/1790)
+
 ## 1.9.3
 * Refactored RN commands. Implemented command cancelation. [#1744](https://github.com/microsoft/vscode-react-native/commit/36a2164531c4813b93ae053b80dbaf3413b5e047)
 * Updated android environment check. [#1772](https://github.com/microsoft/vscode-react-native/commit/8609d70137598f25e88fb8b6413a7aae76645c65)

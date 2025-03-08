@@ -12,7 +12,6 @@ import { InternalErrorCode } from "../../common/error/internalErrorCode";
 import { ProjectVersionHelper } from "../../common/projectVersionHelper";
 import { findFileInFolderHierarchy } from "../../common/extensionHelper";
 import { ReactNativeCommand } from "./util/reactNativeCommand";
-import { SettingsHelper } from "../settingsHelper";
 
 nls.config({
     messageFormat: nls.MessageFormat.bundle,
@@ -30,9 +29,7 @@ export class RevertOpenModule extends ReactNativeCommand {
 
     async baseFn(): Promise<void> {
         assert(this.project);
-
         const NODE_MODULES_FODLER_NAME = "node_modules";
-        const PNPM_PACKAGE_NAME = ".pnpm";
         const projectRootPath = this.project.getWorkspaceFolder().uri.fsPath;
 
         const packageJsonPath = findFileInFolderHierarchy(projectRootPath, "package.json");
@@ -45,34 +42,11 @@ export class RevertOpenModule extends ReactNativeCommand {
                 ? "open"
                 : "opn";
 
-        const pnpmModulesPath = path.join(
+        const openModulePath = path.resolve(
             projectRootPath,
             NODE_MODULES_FODLER_NAME,
-            PNPM_PACKAGE_NAME,
+            OPN_PACKAGE_NAME,
         );
-        const isPnpmProject =
-            fs.existsSync(pnpmModulesPath) && SettingsHelper.getPackageManager() === "pnpm";
-        let openModulePath = "";
-
-        if (isPnpmProject) {
-            const modules = fs.readdirSync(pnpmModulesPath);
-            const openRegex = /^open@/;
-            const openModule = modules.find(module => openRegex.test(module));
-            if (openModule) {
-                openModulePath = path.join(
-                    pnpmModulesPath,
-                    openModule,
-                    NODE_MODULES_FODLER_NAME,
-                    OPN_PACKAGE_NAME,
-                );
-            }
-        } else {
-            openModulePath = path.resolve(
-                projectRootPath,
-                NODE_MODULES_FODLER_NAME,
-                OPN_PACKAGE_NAME,
-            );
-        }
 
         if (fs.existsSync(openModulePath)) {
             const mainFilePath = path.resolve(openModulePath, "open-main.js");

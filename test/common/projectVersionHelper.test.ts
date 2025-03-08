@@ -1,7 +1,7 @@
 // Copyright (c) Microsoft Corporation. All rights reserved.
 // Licensed under the MIT license. See LICENSE file in the project root for details.
 
-import { ProjectVersionHelper } from "../../src/common/projectVersionHelper";
+import { ProjectVersionHelper, REACT_NATIVE_PACKAGES } from "../../src/common/projectVersionHelper";
 import { RN_VERSION_ERRORS } from "../../src/common/error/versionError";
 import { Node } from "../../src/common/node/node";
 
@@ -11,32 +11,28 @@ import * as fs from "fs";
 import { ParsedPackage } from "../../src/common/reactNativeProjectHelper";
 
 suite("projectVersionHelper", function () {
-    const sampleReactNative022ProjectDir = path.join(
+    const sampleReactNativeProjectDir = path.join(
         __dirname,
         "..",
         "resources",
-        "sampleReactNative022Project",
+        "sampleReactNativeProject",
     );
 
-    const nodeModulesRoot: string = sampleReactNative022ProjectDir;
+    const nodeModulesRoot: string = sampleReactNativeProjectDir;
 
-    test("getReactNativeVersionsFromProjectPackage should return object containing version strings if 'version' field is found in project's package.json file", () => {
+    test("getReactNativeVersionsFromProjectPackage should return object containing version strings if 'version' field is found in project's package.json file", async () => {
         let additionalPackages: ParsedPackage[] = [];
-        additionalPackages.push({
-            packageName: "react-native-windows",
-            useSemverCoerce: false,
-        });
-        return ProjectVersionHelper.getReactNativeVersionsFromProjectPackage(
-            sampleReactNative022ProjectDir,
+        additionalPackages.push(REACT_NATIVE_PACKAGES.REACT_NATIVE_WINDOWS);
+        const versions = await ProjectVersionHelper.getReactNativeVersionsFromProjectPackage(
+            sampleReactNativeProjectDir,
             additionalPackages,
-        ).then(versions => {
-            assert.strictEqual(versions.reactNativeVersion, "0.22.2");
-            assert.strictEqual(versions.reactNativeWindowsVersion, "0.60.0-vnext.68");
-        });
+        );
+        assert.strictEqual(versions.reactNativeVersion, "0.65.0");
+        assert.strictEqual(versions.reactNativeWindowsVersion, "0.65.9");
     });
 
     suite("getReactNativeVersionsFromProjectWithIncorrectPackageJson", () => {
-        const packageJsonPath = path.join(sampleReactNative022ProjectDir, "package.json");
+        const packageJsonPath = path.join(sampleReactNativeProjectDir, "package.json");
         const packageJsonContent = fs.readFileSync(packageJsonPath, "utf8");
         const versionObj = {
             devDependencies: {},
@@ -50,36 +46,32 @@ suite("projectVersionHelper", function () {
             fs.writeFileSync(packageJsonPath, packageJsonContent);
         });
 
-        test("getReactNativeVersionsFromProjectPackage should return containing empty version strings if 'version' field isn't found in project's package.json file", () => {
+        test("getReactNativeVersionsFromProjectPackage should return containing empty version strings if 'version' field isn't found in project's package.json file", async () => {
             let additionalPackages: ParsedPackage[] = [];
-            additionalPackages.push({
-                packageName: "react-native-windows",
-                useSemverCoerce: false,
-            });
-            return ProjectVersionHelper.getReactNativeVersionsFromProjectPackage(
-                sampleReactNative022ProjectDir,
+            additionalPackages.push(REACT_NATIVE_PACKAGES.REACT_NATIVE_WINDOWS);
+            const versions = await ProjectVersionHelper.getReactNativeVersionsFromProjectPackage(
+                sampleReactNativeProjectDir,
                 additionalPackages,
-            ).then(versions => {
-                assert.strictEqual(
-                    versions.reactNativeVersion,
-                    "errorMissingDependenciesFieldsInProjectPackageFile",
-                );
-                assert.strictEqual(
-                    versions.reactNativeWindowsVersion,
-                    "errorMissingDependenciesFieldsInProjectPackageFile",
-                );
-            });
+            );
+            assert.strictEqual(
+                versions.reactNativeVersion,
+                "errorMissingDependenciesFieldsInProjectPackageFile",
+            );
+            assert.strictEqual(
+                versions.reactNativeWindowsVersion,
+                "errorMissingDependenciesFieldsInProjectPackageFile",
+            );
         });
     });
 
     suite("getReactNativeVersionsFromNodeModules", () => {
         const reactNativePackageDir = path.join(
-            sampleReactNative022ProjectDir,
+            sampleReactNativeProjectDir,
             "node_modules",
             "react-native",
         );
         const reactNativeWindowsPackageDir = path.join(
-            sampleReactNative022ProjectDir,
+            sampleReactNativeProjectDir,
             "node_modules",
             "react-native-windows",
         );
@@ -92,11 +84,11 @@ suite("projectVersionHelper", function () {
 
         suiteTeardown(() => {
             fsHelper.removePathRecursivelySync(
-                path.join(sampleReactNative022ProjectDir, "node_modules"),
+                path.join(sampleReactNativeProjectDir, "node_modules"),
             );
         });
 
-        test("getReactNativePackageVersionsFromNodeModules should return object containing packages versions if 'version' field is found in react-native and react-native-windows packages package.json files from node_modules", (done: Mocha.Done) => {
+        test("getReactNativePackageVersionsFromNodeModules should return object containing packages versions if 'version' field is found in react-native and react-native-windows packages package.json files from node_modules", async () => {
             const reactNativeVersionObj = {
                 version: "^0.20.0",
             };
@@ -115,21 +107,17 @@ suite("projectVersionHelper", function () {
             );
 
             let additionalPackages: ParsedPackage[] = [];
-            additionalPackages.push({
-                packageName: "react-native-windows",
-                useSemverCoerce: false,
-            });
-            ProjectVersionHelper.getReactNativePackageVersionsFromNodeModules(
-                nodeModulesRoot,
-                additionalPackages,
-            ).then(versions => {
-                assert.strictEqual(versions.reactNativeVersion, "0.20.0");
-                assert.strictEqual(versions.reactNativeWindowsVersion, "0.60.0-vnext.68");
-                done();
-            });
+            additionalPackages.push(REACT_NATIVE_PACKAGES.REACT_NATIVE_WINDOWS);
+            const versions =
+                await ProjectVersionHelper.getReactNativePackageVersionsFromNodeModules(
+                    nodeModulesRoot,
+                    additionalPackages,
+                );
+            assert.strictEqual(versions.reactNativeVersion, "0.20.0");
+            assert.strictEqual(versions.reactNativeWindowsVersion, "0.60.0-vnext.68");
         });
 
-        test("getReactNativePackageVersionsFromNodeModules should return object containing strings if version field is an URL", () => {
+        test("getReactNativePackageVersionsFromNodeModules should return object containing strings if version field is an URL", async () => {
             const versionObj = {
                 version: "https://github.com/expo/react-native/archive/sdk-35.0.0.tar.gz",
             };
@@ -139,11 +127,11 @@ suite("projectVersionHelper", function () {
                 JSON.stringify(versionObj, null, 2),
             );
 
-            return ProjectVersionHelper.getReactNativePackageVersionsFromNodeModules(
-                nodeModulesRoot,
-            ).then(versions => {
-                assert.strictEqual(versions.reactNativeVersion, "SemverInvalid: URL");
-            });
+            const versions =
+                await ProjectVersionHelper.getReactNativePackageVersionsFromNodeModules(
+                    nodeModulesRoot,
+                );
+            assert.strictEqual(versions.reactNativeVersion, "SemverInvalid: URL");
         });
     });
 

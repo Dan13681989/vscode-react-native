@@ -1,7 +1,7 @@
 // Copyright (c) Microsoft Corporation. All rights reserved.
 // Licensed under the MIT license. See LICENSE file in the project root for details.
 
-import { PlatformType, ExpoPlatform } from "../launchArgs";
+import { PlatformType } from "../launchArgs";
 import { DebugScenarioType, DEBUG_TYPES } from "./debugConfigTypesAndConstants";
 
 interface DebugScenarioName {
@@ -10,7 +10,6 @@ interface DebugScenarioName {
     platformType?: string;
     postPlatformTypeDescription?: string;
     experimentalDescription?: string;
-    expoPlatformType?: ExpoPlatform;
 }
 
 export class DebugScenarioNameGenerator {
@@ -20,16 +19,10 @@ export class DebugScenarioNameGenerator {
         platformType?: PlatformType | string,
         useHermesEngine: boolean = false,
         isExperimental: boolean = false,
-        expoPlatformType?: ExpoPlatform,
     ): string {
         const debugScenarioName: DebugScenarioName =
             this.createScenarioAccordingToDebugScenarioType(debugScenarioType);
         debugScenarioName.platformType = this.getPlatformTypeName(platformType);
-
-        if (platformType === PlatformType.Exponent) {
-            debugScenarioName.expoPlatformType = expoPlatformType;
-        }
-
         if (debugType === DEBUG_TYPES.REACT_NATIVE) {
             this.configureNotDirectModeScenario(
                 debugScenarioName,
@@ -137,9 +130,6 @@ export class DebugScenarioNameGenerator {
         }
         if (debugScenarioName.platformType) {
             debugScenarioNameStr += ` ${debugScenarioName.platformType}`;
-        }
-        if (debugScenarioName.expoPlatformType) {
-            debugScenarioNameStr += ` ${debugScenarioName.expoPlatformType}`;
         }
         if (debugScenarioName.postPlatformTypeDescription) {
             debugScenarioNameStr += ` ${debugScenarioName.postPlatformTypeDescription}`;

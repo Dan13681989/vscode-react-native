@@ -3,7 +3,11 @@
 
 import * as fs from "fs";
 import * as path from "path";
+import * as semver from "semver";
+import { OutputChannelLogger } from "../extension/log/OutputChannelLogger";
 import { ProjectVersionHelper } from "./projectVersionHelper";
+import { FileSystem } from "./node/fileSystem";
+import { stripJsonTrailingComma } from "./utils";
 
 export interface ParsedPackage {
     packageName: string;
@@ -95,5 +99,49 @@ export class ReactNativeProjectHelper {
             experimentalFeaturesContent,
         );
         return hermesEnabled;
+    }
+
+    public static async UpdateMertoBundlerForExpoWeb(launchArgs: any) {
+        const appJsonPath = path.join(launchArgs.cwd, "app.json");
+        const fs = new FileSystem();
+        const appJson = await fs.readFile(appJsonPath).then(content => {
+            return stripJsonTrailingComma(content.toString());
+        });
+
+        if (!appJson.expo.web.bundler) {
+            appJson.expo.web.bundler = "metro";
+            await fs.writeFile(appJsonPath, JSON.stringify(appJson, null, 2));
+        }
+    }
+
+    public static async verifyMetroConfigFile(projectRoot: string) {
+        const logger = OutputChannelLogger.getChannel(OutputChannelLogger.MAIN_CHANNEL_NAME, true);
+
+        let version;
+        try {
+            version = await ProjectVersionHelper.getReactNativeVersions(projectRoot);
+        } catch {
+            version = await ProjectVersionHelper.getReactNativeVersions(
+                projectRoot,
+                undefined,
+                projectRoot,
+            );
+        }
+
+        let content = "";
+        if (fs.existsSync(path.join(projectRoot, "metro.config.js"))) {
+            content = fs.readFileSync(path.join(projectRoot, "metro.config.js"), "utf-8");
+        } else if (fs.existsSync(path.join(projectRoot, "metro.config.cjs"))) {
+            content = fs.readFileSync(path.join(projectRoot, "metro.config.cjs"), "utf-8");
+        } else {
+            return;
+        }
+
+        const isNewMetroConfig = content.includes("getDefaultConfig");
+        if (semver.gte(version.reactNativeVersion, "0.73.0") && !isNewMetroConfig) {
+            logger.warning(
+                'The version of "metro.config" in current project is deprecated, it may cause project build failure. Please update your "metro.config.js" file according to template: https://github.com/facebook/react-native/blob/main/packages/react-native/template/metro.config.js',
+            );
+        }
     }
 }

@@ -12,7 +12,6 @@ import { connect as connectPlaywrightDriver, launch } from "./playwrightDriver";
 import { Logger } from "./logger";
 import { ncp } from "ncp";
 import { URI } from "vscode-uri";
-import { quote } from 'shell-quote';
 
 const repoPath = path.join(__dirname, "../../..");
 
@@ -134,7 +133,7 @@ export async function spawn(options: SpawnOptions): Promise<Code> {
 	const outPath = codePath ? getBuildOutPath(codePath) : getDevOutPath();
 
 	const args = [
-		quote([`${options.workspacePath}`]),
+		options.workspacePath,
 		"--skip-release-notes",
 		"--skip-welcome",
 		"--disable-telemetry",
@@ -143,8 +142,8 @@ export async function spawn(options: SpawnOptions): Promise<Code> {
 		"--disable-keytar",
 		"--disable-crash-reporter",
 		"--disable-workspace-trust",
-		`--extensions-dir=` + quote([`${options.extensionsPath}`]),
-		`--user-data-dir=` + quote([`${options.userDataDir}`]),
+		`--extensions-dir=${options.extensionsPath}`,
+		`--user-data-dir=${options.userDataDir}`,
 		`--logsPath=${path.join(repoPath, ".build", "logs", "smoke-tests")}`,
 		"--driver", handle
 	];
@@ -189,7 +188,7 @@ export async function spawn(options: SpawnOptions): Promise<Code> {
 	}
 
 	if (options.log) {
-		args.push("--log", quote([`${options.log}`]));
+		args.push("--log", options.log);
 	}
 
 	if (options.extraArgs) {

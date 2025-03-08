@@ -14,7 +14,6 @@ import { getFileNameWithoutExtension } from "../../common/utils";
 import customRequire from "../../common/customRequire";
 import { PlatformType } from "../launchArgs";
 import { AppLauncher } from "../appLauncher";
-import { SettingsHelper } from "../../extension/settingsHelper";
 
 export interface ConfigurationData {
     fullProductName: string;
@@ -30,7 +29,6 @@ export class PlistBuddy {
     private static readonly NEW_RN_IOS_CLI_LOCATION_VERSION = "0.60.0";
     private static readonly RN69_FUND_XCODE_PROJECT_LOCATION_VERSION = "0.69.0";
     private static readonly RN_VERSION_CLI_PLATFORM_APPLE = "0.74.0";
-    private static readonly RN_VERSION_CLI_CONFIG_APPLE = "0.76.2";
     private readonly TARGET_BUILD_DIR_SEARCH_KEY = "TARGET_BUILD_DIR";
     private readonly FULL_PRODUCT_NAME_SEARCH_KEY = "FULL_PRODUCT_NAME";
     private nodeChildProcess: ChildProcess;
@@ -249,48 +247,24 @@ export class PlistBuddy {
          * @format
          */
 
-        const nodeModulesRoot: string = AppLauncher.getNodeModulesRootByProjectPath(projectRoot);
-
         const iOSCliPlatform = semver.gte(rnVersion, PlistBuddy.RN_VERSION_CLI_PLATFORM_APPLE)
-            ? semver.gte(rnVersion, PlistBuddy.RN_VERSION_CLI_CONFIG_APPLE)
-                ? "cli-config-apple"
-                : "cli-platform-apple"
+            ? "cli-platform-apple"
             : "cli-platform-ios";
         const iOSCliFolderName =
             semver.gte(rnVersion, PlistBuddy.NEW_RN_IOS_CLI_LOCATION_VERSION) ||
             ProjectVersionHelper.isCanaryVersion(rnVersion)
                 ? iOSCliPlatform
                 : "cli";
-
-        let findXcodeBase = "node_modules/@react-native-community";
-
-        const pnpmProjectPath = path.resolve(nodeModulesRoot, "node_modules", ".pnpm");
-
-        const isPnpmProject =
-            fs.existsSync(pnpmProjectPath) && SettingsHelper.getPackageManager() === "pnpm";
-        if (isPnpmProject) {
-            const modules = fs.readdirSync(pnpmProjectPath);
-            const regex = new RegExp(`\@react-native-community\\+${iOSCliFolderName}@`);
-            const communityModule = modules.find(module => regex.test(module));
-            if (communityModule) {
-                findXcodeBase = path.join(
-                    "node_modules",
-                    ".pnpm",
-                    communityModule,
-                    "node_modules",
-                    "@react-native-community",
-                );
-            }
-        }
-
-        const findXcodeProjectLocation = `${findXcodeBase}/${iOSCliFolderName}/build/${
+        const findXcodeProjectLocation = `node_modules/@react-native-community/${iOSCliFolderName}/build/${
             semver.gte(rnVersion, PlistBuddy.RN69_FUND_XCODE_PROJECT_LOCATION_VERSION)
                 ? "config/findXcodeProject"
                 : "commands/runIOS/findXcodeProject"
         }`;
-
         const findXcodeProject = customRequire(
-            path.join(nodeModulesRoot, findXcodeProjectLocation),
+            path.join(
+                AppLauncher.getNodeModulesRootByProjectPath(projectRoot),
+                findXcodeProjectLocation,
+            ),
         ).default;
         const xcodeProject = findXcodeProject(fs.readdirSync(platformProjectRoot));
         if (!xcodeProject) {

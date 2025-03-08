@@ -7,7 +7,7 @@ import * as Mocha from "mocha";
 export async function run(): Promise<void> {
     const mocha = new Mocha({
         ui: "tdd",
-        grep: "localizationContext",
+        grep: RegExp("localizationContext"),
         reporter: "mocha-multi-reporters",
         reporterOptions: {
             reporterEnabled: "spec, mocha-junit-reporter",

@@ -27,7 +27,8 @@ export class RunElementInspector extends Command {
 
     error = ErrorHelper.getInternalError(
         InternalErrorCode.CommandFailed,
-        localize("ReactNativeRunElementInspector", "React Native: Run Element Inspector"),
+        "ReactNativeRunElementInspector",
+        "React Native: Run Element Inspector",
     );
 
     async baseFn(): Promise<void> {
@@ -53,6 +54,7 @@ export class RunElementInspector extends Command {
 
         elementInspector = child_process.spawn(command, [], {
             env,
+            shell: true,
         });
 
         if (!elementInspector.pid) {
@@ -80,7 +82,7 @@ export class StopElementInspector extends Command {
 
     error = ErrorHelper.getInternalError(
         InternalErrorCode.CommandFailed,
-        localize("ReactNativeStopElementInspector", "React Native: Stop Element Inspector"),
+        "React Native: Stop Element Inspector",
     );
 
     async baseFn(): Promise<void> {

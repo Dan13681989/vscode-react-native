@@ -5,8 +5,8 @@ import * as fs from "fs";
 import * as path from "path";
 import * as child_process from "child_process";
 import * as vscode from "vscode";
-import * as execa from "execa";
 import * as nls from "vscode-nls";
+import * as execa from "execa";
 import * as BrowserHelper from "vscode-js-debug-browsers";
 import { Packager } from "../common/packager";
 import { RNPackageVersions, ProjectVersionHelper } from "../common/projectVersionHelper";
@@ -332,9 +332,7 @@ export class AppLauncher {
                             "Building and running application.",
                         ),
                     );
-                    if (launchArgs.platform !== "exponent") {
-                        await this.mobilePlatform.runApp();
-                    }
+                    await this.mobilePlatform.runApp();
 
                     if (mobilePlatformOptions.isDirect) {
                         if (launchArgs.useHermesEngine) {
@@ -517,6 +515,7 @@ export class AppLauncher {
                 this.browserProc = child_process.spawn(browserPath.path, runArguments, {
                     detached: true,
                     stdio: ["ignore"],
+                    shell: true,
                 });
                 this.browserProc.unref();
                 this.browserProc.on("error", err => {
@@ -597,7 +596,6 @@ export class AppLauncher {
 
         if (args.platform === PlatformType.Exponent) {
             mobilePlatformOptions.expoHostType = args.expoHostType || "lan";
-            mobilePlatformOptions.expoPlatformType = args.expoPlatformType || "Android";
             mobilePlatformOptions.openExpoQR =
                 typeof args.openExpoQR !== "boolean" ? true : args.openExpoQR;
         }

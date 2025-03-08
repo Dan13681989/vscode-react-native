@@ -5,7 +5,6 @@ import { spawn, execSync } from "child_process";
 import { sleep, waitUntil } from "./utilities";
 import * as kill from "tree-kill";
 import * as cp from "child_process";
-import { quote } from 'shell-quote';
 import { SmokeTestLogger } from "./smokeTestLogger";
 import { ExpoClientData } from "./androidEmulatorManager";
 
@@ -195,7 +194,7 @@ export default class IosSimulatorManager {
             "log",
             "stream",
             "--predicate",
-            quote([`${predicate}`]),
+            predicate,
         ];
         const proc = spawn("xcrun", args, { stdio: "pipe" });
         proc.stdout.on("data", (data: string) => {

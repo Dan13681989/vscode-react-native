@@ -1,13 +1,11 @@
 trigger:
-  - master
+  - none
 pr:
-  - master
+  - none
 
 variables:
   vswdbotLogin: vswdbot
-  appiumVersion: 1.19.0
-  basicOnly: false
-  useCachedApplications: true
+  appiumVersion: 1.22.2
   expoCLIVersion: latest
   smokeTestDirectory: test/smoke
 
@@ -15,7 +13,7 @@ jobs:
   - job: Linux
     pool:
       name: "React Native smoke tests - Linux"
-    timeoutInMinutes: 45
+    timeoutInMinutes: 50
     steps:
       - checkout: self
         clean: true

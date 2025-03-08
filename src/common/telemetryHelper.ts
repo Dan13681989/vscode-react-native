@@ -99,11 +99,6 @@ export class TelemetryHelper {
                 "expoHostType",
                 properties,
             );
-            properties = TelemetryHelper.addPropertyToTelemetryProperties(
-                args.expoPlatformType,
-                "expoPlatformType",
-                properties,
-            );
         }
 
         return properties;

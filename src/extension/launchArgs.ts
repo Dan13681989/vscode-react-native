@@ -38,8 +38,6 @@ export enum PlatformType {
 
 export type ExpoHostType = "tunnel" | "lan" | "local";
 
-export type ExpoPlatform = "Android" | "iOS";
-
 /**
  * Defines the options needed to start debugging a project.
  */
@@ -63,7 +61,6 @@ export interface IIOSRunOptions extends ImacOSRunOptions {
 export interface IExponentRunOptions extends IAndroidRunOptions, IIOSRunOptions {
     expoHostType?: ExpoHostType;
     openExpoQR?: boolean;
-    expoPlatformType?: ExpoPlatform;
 }
 
 export type IWindowsRunOptions = ILaunchArgs;

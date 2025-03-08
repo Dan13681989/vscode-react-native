@@ -9,7 +9,6 @@ import { Packager } from "../common/packager";
 import { SystemColorTheme } from "../common/editorColorThemesHelper";
 import { stripJsonTrailingComma } from "../common/utils";
 import { LogLevel } from "./log/LogHelper";
-import { SystemColorTheme } from "../common/editorColorThemesHelper";
 import { PackagerStatusIndicator } from "./packagerStatusIndicator";
 
 export class SettingsHelper {
@@ -261,17 +260,6 @@ export class SettingsHelper {
         );
         if (workspaceConfiguration.has("setNodeVersion")) {
             return ConfigurationReader.readString(workspaceConfiguration.get("setNodeVersion"));
-        }
-        return "";
-    }
-
-    public static getPackageManager(): string {
-        const workspaceConfiguration = vscode.workspace.getConfiguration(
-            "react-native-tools",
-            null,
-        );
-        if (workspaceConfiguration.has("setPackageManager")) {
-            return ConfigurationReader.readString(workspaceConfiguration.get("setPackageManager"));
         }
         return "";
     }

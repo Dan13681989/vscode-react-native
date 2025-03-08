@@ -9,7 +9,6 @@ import { promisify } from "util";
 import { IDriver, IDisposable } from "./driver";
 import { URI } from "vscode-uri";
 import * as kill from "tree-kill";
-import { quote } from 'shell-quote';
 
 const width = 1200;
 const height = 800;
@@ -119,7 +118,7 @@ export async function launch(userDataDir: string, _workspacePath: string, codeSe
 		...process.env
 	};
 
-	const args = ["--disable-telemetry", "--port", `${port++}`, "--browser", "none", "--driver", "web", "--extensions-dir", quote([`${extPath}`])];
+	const args = ["--disable-telemetry", "--port", `${port++}`, "--browser", "none", "--driver", "web", "--extensions-dir", extPath];
 
 	let serverLocation: string | undefined;
 	if (codeServerPath) {

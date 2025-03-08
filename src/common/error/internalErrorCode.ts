@@ -16,7 +16,22 @@ export enum InternalErrorCode {
     FailedToPublishToExpHost = 111,
     UnsupportedCommandStatus = 112,
     CommandFailedWithDetails = 113,
-
+    FailedToRunOnWindows = 114,
+    FailedToRunOnMacOS = 115,
+    DebuggingCommandFailed = 116,
+    FailedToTestDevEnvironment = 117,
+    CommandCanceled = 118,
+    FailedToConfigEASBuild = 119,
+    FailedToOpenProjectPage = 120,
+    FailedToRevertOpenModule = 121,
+    FailedToOpenRNUpgradeHelper = 122,
+    FailedToInstallExpoGo = 123,
+    FailedToLaunchExpoWeb = 124,
+    FailedToRunRNDoctor = 125,
+    FailedToRunExpoDoctor = 126,
+    FailedToRunPrebuild = 127,
+    FailedToRunPrebuildClean = 128,
+    FailedToReopenQRCode = 129,
     // Device Deployer errors
     IOSDeployNotFound = 201,
 
@@ -71,6 +86,9 @@ export enum InternalErrorCode {
     PackageNotFound = 714,
     ReactDevtoolsIsNotInstalled = 715,
     CancellationTokenTriggered = 716,
+    UnknownError = 717,
+    WorkspaceIsNotTrusted = 718,
+    UserInputCanceled = 719,
 
     // Activation errors
     CouldNotFindLocationOfNodeDebugger = 801,
@@ -105,6 +123,7 @@ export enum InternalErrorCode {
 
     // Windows Phone errors
     WinRNMPPluginIsNotInstalled = 1301,
+    WinRunCommandFailed = 1302,
 
     // Debugger errors
     SourcesStoragePathIsNullOrEmpty = 1401,

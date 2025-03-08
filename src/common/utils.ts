@@ -1,8 +1,10 @@
 // Copyright (c) Microsoft Corporation. All rights reserved.
 // Licensed under the MIT license. See LICENSE file in the project root for details.
 import * as path from "path";
+import * as net from "net";
 import stripJsonComments = require("strip-json-comments");
 import { logger } from "@vscode/debugadapter";
+import { Address4, Address6 } from "ip-address";
 import { ChildProcess } from "./node/childProcess";
 import { HostPlatform } from "./hostPlatform";
 import customRequire from "./customRequire";
@@ -26,10 +28,8 @@ export function getFileNameWithoutExtension(fileName: string): string {
     return path.basename(fileName, path.extname(fileName));
 }
 
-import * as path from "path";
-
-export function getFileNameWithoutExtension(fileName: string) {
-    return path.basename(fileName, path.extname(fileName));
+export function isNullOrUndefined(value: any): boolean {
+    return typeof value === "undefined" || value === null;
 }
 
 export function notNullOrUndefined<T>(value: T | null | undefined): value is T {
@@ -74,9 +74,6 @@ function padZeroes(minDesiredLength: number, numberToPad: string): string {
 
 export function stripJsonTrailingComma(str: string): any {
     const endOfStringTrailingCommaRegex = /,\s*$/g;
-    const matchResult = str.match(endOfStringTrailingCommaRegex);
-    if (matchResult) {
-    }
     const result = str.replace(endOfStringTrailingCommaRegex, "");
     let objResult;
     try {
@@ -87,4 +84,43 @@ export function stripJsonTrailingComma(str: string): any {
         objResult = JSON.parse(stripJsonComments(str));
     }
     return objResult;
+}
+
+export async function wait(time?: number): Promise<void> {
+    const times = time ? time : 2000;
+    await new Promise<void>(resolve => {
+        const timer = setTimeout(() => {
+            clearTimeout(timer);
+            resolve();
+        }, times);
+    });
+}
+
+export function getTimestamp(): string {
+    const date = new Date(Date.now());
+    const year = date.getFullYear();
+    const month = date.getMonth() + 1;
+    const time = `${date.getDate()}${String(date.getHours()).padStart(2, "0")}${String(
+        date.getMinutes(),
+    ).padStart(2, "0")}${String(date.getSeconds()).padStart(2, "0")}`;
+
+    return `${year}${month}${time}`;
+}
+
+export function getTSVersion(projectPath: string): Promise<string> {
+    const childProcess = new ChildProcess();
+    return childProcess.execToString("npx tsc -v", { cwd: projectPath });
+}
+
+export function ipToBuffer(ip: string): Buffer {
+    if (net.isIPv4(ip)) {
+        // Handle IPv4 addresses
+        const address = new Address4(ip);
+        return Buffer.from(address.toArray());
+    } else if (net.isIPv6(ip)) {
+        // Handle IPv6 addresses
+        const address = new Address6(ip);
+        return Buffer.from(address.toByteArray());
+    }
+    throw new Error("Invalid IP address format.");
 }
