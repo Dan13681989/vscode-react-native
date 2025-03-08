@@ -39,8 +39,17 @@ extends:
                   Contents: |
                     *.vsix
                   TargetFolder: "$(Build.ArtifactStagingDirectory)"
-              - bash: |
-                  VSIX=`ls *.vsix`
-                  vsce publish --pat $(extension-publish-vswdbot-PAT) --packagePath $VSIX
-                displayName: "VSCE publish"
-                condition: and(succeeded(), eq(variables['dryrun'], 'false'))
+              # - bash: |
+              #     VSIX=`ls *.vsix`
+              #     vsce publish --pat $(extension-publish-vswdbot-PAT) --packagePath $VSIX
+              #   displayName: "VSCE publish"
+              #   condition: and(succeeded(), eq(variables['dryrun'], 'false'))
+              - task: AzureCLI@2
+                displayName: 'Publishing with Managed Identity'
+                inputs:
+                  azureSubscription: VS Web Diagnotics Subscription
+                  scriptType: "pscore"
+                  scriptLocation: 'inlineScript'
+                  inlineScript: |
+                    VSIX=`ls *.vsix`
+                    vsce publish --azure-credential --package $VSIX
