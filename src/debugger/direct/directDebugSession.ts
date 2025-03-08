@@ -175,6 +175,7 @@ export class DirectDebugSession extends DebugSessionBase {
                 this.projectRootPath,
                 ProjectVersionHelper.generateAdditionalPackagesToCheckByPlatform(attachArgs),
             );
+
             extProps = TelemetryHelper.addPlatformPropertiesToTelemetryProperties(
                 attachArgs,
                 versions,
@@ -256,7 +257,18 @@ export class DirectDebugSession extends DebugSessionBase {
                     attachArgs.useHermesEngine,
                     settingsPorts,
                 );
-                this.appLauncher.getRnCdpProxy().setBrowserInspectUri(browserInspectUri);
+
+                // Make sure expo app is using correct ws endpoint url
+                const debuggerType = await this.debuggerEndpointHelper.getDebuggerTpye(
+                    `http://localhost:${attachArgs.port}`,
+                );
+                if (debuggerType == "expo") {
+                    const expoBrowserInspectUri = `${browserInspectUri.split("&")[0]}&page=2`;
+                    this.appLauncher.getRnCdpProxy().setBrowserInspectUri(expoBrowserInspectUri);
+                } else {
+                    this.appLauncher.getRnCdpProxy().setBrowserInspectUri(browserInspectUri);
+                }
+
                 await this.establishDebugSession(attachArgs);
             });
             this.sendResponse(response);
@@ -287,7 +299,7 @@ export class DirectDebugSession extends DebugSessionBase {
     }
 
     protected async establishDebugSession(attachArgs: IAttachRequestArgs): Promise<void> {
-        const attachConfiguration = JsDebugConfigAdapter.createDebuggingConfigForRNHermes(
+        const attachConfiguration = await JsDebugConfigAdapter.createDebuggingConfigForRNHermes(
             attachArgs,
             this.appLauncher.getCdpProxyPort(),
             this.rnSession.sessionId,

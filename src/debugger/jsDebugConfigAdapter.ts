@@ -1,9 +1,11 @@
 // Copyright (c) Microsoft Corporation. All rights reserved.
 // Licensed under the MIT license. See LICENSE file in the project root for details.
-
+import * as semver from "semver";
+import { ProjectVersionHelper } from "../common/projectVersionHelper";
 import { IAttachRequestArgs } from "./debugSessionBase";
 
 export class JsDebugConfigAdapter {
+    private static RNVersion_Direct_Debug = "0.76.0";
     public static createDebuggingConfigForPureRN(
         attachArgs: IAttachRequestArgs,
         cdpProxyPort: number,
@@ -24,12 +26,21 @@ export class JsDebugConfigAdapter {
         });
     }
 
-    public static createDebuggingConfigForRNHermes(
+    public static async createDebuggingConfigForRNHermes(
         attachArgs: IAttachRequestArgs,
         cdpProxyPort: number,
         sessionId: string,
-    ): any {
-        return Object.assign({}, JsDebugConfigAdapter.getExistingExtraArgs(attachArgs), {
+    ) {
+        const extraArgs: any = {};
+        const versions = await ProjectVersionHelper.getReactNativeVersions(attachArgs.cwd);
+        // Handle project file path from 0.76
+        if (semver.gte(versions.reactNativeVersion, JsDebugConfigAdapter.RNVersion_Direct_Debug)) {
+            extraArgs.sourceMapPathOverrides = {
+                "/[metro-project]/*": `${attachArgs.cwd}/*`,
+            };
+        }
+
+        return Object.assign({}, JsDebugConfigAdapter.getExistingExtraArgs(attachArgs), extraArgs, {
             type: "pwa-node",
             request: "attach",
             name: "Attach",

@@ -453,6 +453,36 @@
         "title": "Reopen QR Code in Expo",
         "category": "React Native",
         "enablement": "!config.security.workspace.trust.enabled || isWorkspaceTrusted"
+      },
+      {
+        "command": "reactNative.hermesEnable",
+        "title": "Enable Hermes",
+        "category": "React Native",
+        "enablement": "!config.security.workspace.trust.enabled || isWorkspaceTrusted"
+      },
+      {
+        "command": "reactNative.expoHermesEnable",
+        "title": "Enable & Disable Expo Hermes",
+        "category": "React Native",
+        "enablement": "!config.security.workspace.trust.enabled || isWorkspaceTrusted"
+      },
+      {
+        "command": "reactNative.openExpoUpgradeHelper",
+        "title": "Open expo upgrade helper in web page",
+        "category": "React Native",
+        "enablement": "!config.security.workspace.trust.enabled || isWorkspaceTrusted"
+      },
+      {
+        "command": "reactNative.killPort",
+        "title": "Kill Port",
+        "category": "React Native",
+        "enablement": "!config.security.workspace.trust.enabled || isWorkspaceTrusted"
+      },
+      {
+        "command": "reactNative.setNewArch",
+        "title": "Set React Native New Architecture",
+        "category": "React Native",
+        "enablement": "!config.security.workspace.trust.enabled || isWorkspaceTrusted"
       }
     ],
     "menus": {
@@ -1339,7 +1369,7 @@
           "scope": "resource",
           "default": true
         },
-        "react-native-tools.telemetry.optIn":  {
+        "react-native-tools.telemetry.optIn": {
           "description": "Whether to send usage data to Microsoft",
           "type": "boolean",
           "scope": "resource",
@@ -1447,6 +1477,8 @@
     "@types/rsocket-core": "0.0.6",
     "@types/rsocket-tcp-server": "0.0.2",
     "@types/semver": "6.2.1",
+    "@types/shell-quote": "^1.7.5",
+    "shell-quote": "^1.8.1",
     "@types/shelljs": "0.7.0",
     "@types/source-map": "0.5.2",
     "@types/source-map-support": "0.2.28",
@@ -1499,7 +1531,7 @@
     "typescript": "5.0.4",
     "vscode-debugprotocol": "1.51.0",
     "vscode-nls-dev": "^4.0.4",
-    "webpack": "5.76.0",
+    "webpack": "5.94.0",
     "webpack-bundle-analyzer": "4.4.0"
   },
   "extensionDependencies": [
